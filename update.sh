@@ -43,10 +43,18 @@ systemctl stop onair-server.service
 # 3. Capture du hash avant
 OLD_HASH=$(sudo -u "$LINUX_USER" git -C "$APP_DIR" rev-parse HEAD)
 
-# 4. Pull (fast-forward only)
-log_info "git pull --ff-only (old: ${OLD_HASH:0:8})"
-if ! sudo -u "$LINUX_USER" git -C "$APP_DIR" pull --ff-only 2>&1; then
-    log_error "git pull a échoué (conflit ou divergence). Aucune modification appliquée."
+# 4. Fetch + reset --hard sur origin/main
+# Tolérant aux divergences d'historique (force-push amont, orphan branch côté
+# maintainer). Les données utilisateur (templates/, uploads/, branding/, *.json)
+# sont gitignored donc reset --hard ne les touche pas.
+log_info "git fetch + reset --hard origin/main (old: ${OLD_HASH:0:8})"
+if ! sudo -u "$LINUX_USER" git -C "$APP_DIR" fetch origin 2>&1; then
+    log_error "git fetch a échoué (réseau ou auth). Aucune modification appliquée."
+    systemctl start onair-server.service
+    die "Abandon."
+fi
+if ! sudo -u "$LINUX_USER" git -C "$APP_DIR" reset --hard origin/main 2>&1; then
+    log_error "git reset --hard origin/main a échoué."
     systemctl start onair-server.service
     die "Abandon."
 fi

@@ -995,8 +995,11 @@ app.post('/api/admin/update', requireAdminPassword, async (req, res) => {
     });
   }
   try {
-    // Lance le service en non-bloquant via sudoers
-    await execShell('sudo', ['-n', '/bin/systemctl', 'start', 'onair-update.service']);
+    // --no-block : systemctl rend la main IMMÉDIATEMENT au lieu d'attendre
+    // que le service oneshot termine. Indispensable ici car update.sh va
+    // stopper onair-server.service pendant l'exécution — si on bloquait,
+    // la réponse HTTP ne partirait jamais et le client verrait "Failed to fetch".
+    await execShell('sudo', ['-n', '/bin/systemctl', 'start', '--no-block', 'onair-update.service']);
     res.json({ started: true, startedAt: new Date().toISOString() });
     logAction('API', 'admin/update started');
   } catch (err) {
