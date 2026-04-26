@@ -34,6 +34,10 @@ Apple iCloud), flux vidéo NDI, contrôle distant via Stream Deck.
 - Pause / Reprise / Arrêt avec confirmation
 - Marquage de **parties (laps)** en cours d'émission
 - Préréglages de durée personnalisables (12, 26, 52 min, etc.)
+- **Arrêt automatique après dépassement** — filet de sécurité configurable
+  via cadran circulaire dans Réglages : si l'opérateur oublie d'arrêter, le
+  chrono + relais ON AIR s'arrêtent seuls après N minutes (par défaut 60).
+  Réglable de 0 (désactivé) à 180 min.
 
 ### Affichage studio (display)
 - URL `/display` plein écran à projeter sur l'écran du studio
