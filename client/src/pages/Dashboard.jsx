@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import TabBar from '../components/TabBar';
 import AdminAuthGate from '../components/AdminAuthGate';
 import DocumentTitle from '../components/DocumentTitle';
+import UpdateSuccessModal from '../components/UpdateSuccessModal';
 import { TimerProvider } from '../store/TimerContext';
 import { PaletteProvider } from '../store/PaletteContext';
 import ControlPanel from '../panels/ControlPanel';
@@ -43,6 +44,10 @@ export default function Dashboard({ activeTab }) {
           <Header />
           <TabBar active={activeTab} />
           <main className="flex-1 min-h-0 overflow-hidden">{wrapped}</main>
+          {/* Modal post-reload : si l'app vient de se mettre à jour, on confirme
+              au user que tout s'est bien passé. Détecte via localStorage et
+              compare la version pré-update avec la version courante. */}
+          <UpdateSuccessModal />
         </div>
       </PaletteProvider>
     </TimerProvider>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useT } from '../hooks/useT';
+import { useT, useTr } from '../hooks/useT';
 
 const API_BASE = '';  // même origine que le serveur
 
 export default function UpdatePanel({ adminPassword, timerIsRunning, onShowToast }) {
   const t = useT();
+  const tr = useTr();
   const [checking, setChecking] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [status, setStatus] = useState(null);  // { updatesAvailable, count, commits }
@@ -62,19 +63,37 @@ export default function UpdatePanel({ adminPassword, timerIsRunning, onShowToast
     setLogs([]);
     try {
       await post('/api/admin/update');
-      // Démarrer le polling des logs
+      // Mémorise la version courante AVANT le restart : permettra à l'app
+      // post-reload de comparer (oldVersion → __APP_VERSION__ chargé après
+      // le nouveau bundle) et d'afficher un modal de confirmation.
+      try {
+        localStorage.setItem('onair.pendingUpdate', JSON.stringify({
+          from: (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'),
+          at: Date.now()
+        }));
+      } catch { /* localStorage indispo : pas grave, pas de modal post-reload */ }
+
+      // Polling : on attend que le service systemd termine ET que le serveur
+      // Node réponde de nouveau. Une fois ces 2 conditions OK, on reload.
+      let serverWasDown = false;
       pollTimer.current = setInterval(async () => {
         try {
           const s = await post('/api/admin/update/status');
           setLogs(s.logs || []);
+          // Si le service est inactif ET que le serveur est revenu (on
+          // vient de réussir à le contacter), c'est terminé.
           if (s.active !== 'active' && s.active !== 'activating') {
             clearInterval(pollTimer.current);
             pollTimer.current = null;
-            setUpdating(false);
-            onShowToast?.('Mise à jour terminée', 'success');
+            // Petit délai pour laisser le serveur finir de servir le bundle
+            // précédent puis on force le reload (cache index.html no-cache).
+            setTimeout(() => window.location.reload(), 1500);
           }
         } catch (err) {
-          // Le serveur peut être momentanément down pendant le restart — on tolère
+          // Le serveur est momentanément down (restart en cours) — on tolère.
+          serverWasDown = true;
+          // Évite l'unused-var warning
+          void serverWasDown;
         }
       }, 2000);
     } catch (err) {
@@ -193,18 +212,88 @@ export default function UpdatePanel({ adminPassword, timerIsRunning, onShowToast
         </div>
       )}
 
+      {/* Bandeau "update en cours" — fullscreen overlay non dismissable.
+          Empêche l'utilisateur de naviguer / fermer pendant le restart. */}
       {updating && (
-        <div className="bg-black border border-white/10 text-green-400 font-mono text-[10px] rounded p-2 max-h-32 overflow-auto">
-          <div className="animate-pulse mb-1">● Mise à jour — ne ferme pas la page</div>
-          {logs.map((l, i) => <div key={i}>{l}</div>)}
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-amber-500/40 rounded-xl shadow-2xl shadow-black/50 p-6 max-w-2xl w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <svg className="w-6 h-6 text-amber-400 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+              </svg>
+              <h4 className="font-bold text-lg text-slate-50">
+                {tr({ fr: 'Mise à jour en cours…', en: 'Update in progress…' })}
+              </h4>
+            </div>
+            <p className="text-sm text-amber-200 mb-3 leading-relaxed">
+              {tr({
+                fr: 'Ne ferme pas cette fenêtre, ne coupe pas le serveur. La page va se recharger automatiquement à la fin.',
+                en: 'Do not close this window, do not power off the server. The page will reload automatically when done.'
+              })}
+            </p>
+            <div className="bg-black border border-white/10 text-green-400 font-mono text-[10px] rounded p-2 max-h-48 overflow-auto">
+              {logs.length === 0
+                ? <div className="text-slate-600 italic">{tr({ fr: 'Démarrage…', en: 'Starting…' })}</div>
+                : logs.map((l, i) => <div key={i}>{l}</div>)}
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Modal de confirmation avec la liste détaillée des nouveaux commits. */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-slate-900 border border-white/5 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl shadow-black/50">
-            <h4 className="font-bold text-lg text-slate-50 mb-2">{t('settings.update.confirm_title')}</h4>
-            <p className="text-sm text-slate-400 mb-6 leading-relaxed">{t('settings.update.confirm_body')}</p>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-white/5 rounded-xl p-6 max-w-2xl w-full shadow-2xl shadow-black/50">
+            <h4 className="font-bold text-lg text-slate-50 mb-2">
+              {t('settings.update.confirm_title')}
+            </h4>
+            <p className="text-sm text-slate-400 mb-4 leading-relaxed">
+              {t('settings.update.confirm_body')}
+            </p>
+
+            {/* Récap technique : version courante → derniere version dispo */}
+            <div className="bg-slate-950/60 border border-white/5 rounded-md p-3 mb-4 flex items-center gap-3">
+              <div className="flex-1 text-xs">
+                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">
+                  {tr({ fr: 'Version actuelle', en: 'Current version' })}
+                </div>
+                <div className="font-mono font-bold text-slate-200">
+                  v{(typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev')}
+                  {localCommit && <span className="ml-1 text-slate-500 font-normal">({localCommit})</span>}
+                </div>
+              </div>
+              <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+              <div className="flex-1 text-xs">
+                <div className="text-[10px] uppercase tracking-widest text-emerald-400 font-semibold mb-1">
+                  {tr({ fr: 'Nouveaux commits', en: 'New commits' })}
+                </div>
+                <div className="font-mono font-bold text-emerald-300">
+                  +{status?.count || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* Liste des commits */}
+            {status?.commits?.length > 0 && (
+              <div className="mb-5">
+                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-2">
+                  {tr({ fr: 'Changements', en: 'Changes' })}
+                </div>
+                <div className="bg-slate-950/60 border border-white/5 rounded-md p-2.5 max-h-48 overflow-y-auto">
+                  <ul className="space-y-1">
+                    {status.commits.map((c, i) => (
+                      <li key={i} className="text-[11px] text-slate-300 font-mono leading-relaxed flex gap-2">
+                        <span className="text-emerald-500/70 flex-shrink-0">•</span>
+                        <span className="truncate" title={c}>{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3 justify-end">
               <button
                 className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-md px-4 py-2 text-sm transition-colors"
