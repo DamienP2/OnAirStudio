@@ -1,0 +1,3 @@
+# SC1091: Don't warn about sourced files that shellcheck cannot follow at lint time.
+# The lib/*.sh modules source common.sh at runtime; the file is not available to shellcheck.
+disable=SC1091

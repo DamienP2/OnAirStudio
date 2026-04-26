@@ -1,0 +1,4 @@
+# OnAir Studio — permet au user de déclencher le service d'update sans mot de passe
+# Installé par install.sh dans /etc/sudoers.d/onair-update avec chmod 0440
+__USER__ ALL=(root) NOPASSWD: /bin/systemctl start onair-update.service
+__USER__ ALL=(root) NOPASSWD: /bin/systemctl is-active onair-update.service

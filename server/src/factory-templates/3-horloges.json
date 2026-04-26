@@ -1,0 +1,144 @@
+{
+  "id": "3-horloges",
+  "name": "3 Horloges",
+  "category": "horloge",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "backgroundColor": "#000000",
+    "backgroundImage": null,
+    "gridEnabled": true,
+    "gridSize": 50,
+    "gridColor": "#FFFFFF",
+    "gridOpacity": 0.08,
+    "snapEnabled": true,
+    "guides": [],
+    "showMidGuides": true,
+    "showMargins": true
+  },
+  "objects": [
+    {
+      "id": "date-1777035108120-85oxt",
+      "type": "date",
+      "x": 730,
+      "y": 997,
+      "width": 462,
+      "height": 59,
+      "rotation": 0,
+      "zIndex": 2,
+      "props": {
+        "format": "EEEE d MMMM yyyy",
+        "fontFamily": "Inter",
+        "color": "#5c5c5c",
+        "backgroundColor": "transparent",
+        "borderRadius": 0,
+        "locale": "fr-FR"
+      }
+    },
+    {
+      "id": "onair-badge-1777035148919-dbizn",
+      "type": "onair-badge",
+      "x": 750,
+      "y": 24,
+      "width": 420,
+      "height": 90,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "text": "ON AIR",
+        "fontFamily": "Inter",
+        "color": "#FFFFFF",
+        "activeColor": "#EF4444",
+        "inactiveColor": "#374151",
+        "borderRadius": 8,
+        "previewActive": false
+      }
+    },
+    {
+      "id": "dynamic-text-1777035189652-litrz",
+      "type": "dynamic-text",
+      "x": 1578,
+      "y": 24,
+      "width": 317,
+      "height": 91,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "template": "{studioName}",
+        "fontFamily": "Inter",
+        "color": "#787878",
+        "backgroundColor": "transparent",
+        "borderRadius": 0,
+        "textAlign": "right",
+        "fontWeight": "normal",
+        "textTransform": "uppercase",
+        "text": "{studioName}"
+      }
+    },
+    {
+      "id": "analog-clock-elapsed-1777035690010-yz1e3",
+      "type": "analog-clock-elapsed",
+      "x": 24,
+      "y": 80,
+      "width": 923,
+      "height": 923,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "label": "Temps écoulé",
+        "color": "#3B82F6"
+      }
+    },
+    {
+      "id": "analog-clock-remaining-1777035768897-yrrym",
+      "type": "analog-clock-remaining",
+      "x": 974,
+      "y": 82,
+      "width": 920,
+      "height": 920,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "label": "Temps restant",
+        "color": "#EF4444"
+      }
+    },
+    {
+      "id": "digital-clock-current-1777035924776-k95pv",
+      "type": "digital-clock-current",
+      "x": 707,
+      "y": 827,
+      "width": 508,
+      "height": 229,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "showLabel": true,
+        "label": "Horloge",
+        "fontFamily": "Helvetica, sans-serif",
+        "color": "#FFFFFF",
+        "backgroundColor": "transparent",
+        "borderRadius": 0,
+        "showSeconds": true,
+        "showHours": true,
+        "flashOnLast10s": false
+      }
+    },
+    {
+      "id": "logo-1777133832720-ee1zr",
+      "type": "logo",
+      "x": 24,
+      "y": 24,
+      "width": 200,
+      "height": 100,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "backgroundColor": "transparent",
+        "borderRadius": 0
+      }
+    }
+  ],
+  "createdAt": "2026-04-24T12:38:57.981Z",
+  "updatedAt": "2026-04-25T16:17:18.075Z"
+}

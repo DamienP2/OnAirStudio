@@ -1,0 +1,15 @@
+[Unit]
+Description=OnAir Studio — mise à jour (oneshot, déclenché manuellement)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/onair-studio
+ExecStart=/opt/onair-studio/update.sh
+StandardOutput=journal
+StandardError=journal
+# Pas de Restart — oneshot, si échec on veut voir le log
+
+[Install]
+WantedBy=multi-user.target

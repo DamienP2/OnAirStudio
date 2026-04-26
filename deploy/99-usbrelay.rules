@@ -1,0 +1,2 @@
+# USB-Relay-1 (vendor 16c0, product 05df) — accessible au groupe plugdev
+KERNEL=="hidraw*", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="05df", MODE="0660", GROUP="plugdev"

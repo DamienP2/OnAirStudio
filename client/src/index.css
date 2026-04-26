@@ -1,0 +1,269 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Masquer les flèches haut/bas natives des inputs type="number" — on a déjà
+   nos propres scrub-inputs et boutons +/− dans l'inspector ; les spinners
+   natifs polluent visuellement (ils n'apparaissent qu'au focus/hover et
+   décalent la valeur affichée). */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Scrollbars discrètes — toute l'app. Le scroll reste fonctionnel mais la
+   barre est très fine et translucide, plus visible au hover.
+   • Webkit (Chrome, Safari, Edge) : ::-webkit-scrollbar
+   • Firefox : scrollbar-width / scrollbar-color */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.15);  /* slate-400/15 */
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+}
+
+/* ── Moveable (designer) — snap & guidelines unifiés ────────────────────────
+   Par défaut Moveable affiche les guidelines (gap) et les chiffres de distance
+   en rouge vif #f55, gros et bold. On override les VRAIES classes qu'utilise
+   Moveable (préfixe `moveable-`) pour matcher le style des labels de repères
+   (cyan #06B6D4 + JetBrains Mono compact).
+
+   Référence CSS interne Moveable :
+     .moveable-size-value     → la pill avec les distances (rouge par défaut)
+     .moveable-guideline      → la ligne du guide (couleur var --moveable-color)
+     .moveable-guideline.moveable-gap → la ligne en gap rouge */
+
+/* Couleur globale (var CSS interne) — passe le bleu Moveable au cyan */
+.moveable-control-box {
+  --moveable-color: #06B6D4 !important;
+  --bounds-color: #06B6D4 !important;
+}
+
+/* Pill des distances — la fameuse "grosse pill rouge" */
+.moveable-size-value {
+  color: white !important;
+  background: #06B6D4 !important;            /* cyan-500 */
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+  font-size: 10px !important;                /* au lieu de 12 px hardcodé */
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.3 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+/* Variante gap (chiffre entre 2 objets) — même style que ci-dessus */
+.moveable-size-value.moveable-gap {
+  color: white !important;
+  background: #06B6D4 !important;
+}
+
+/* Ligne de gap (la ligne rouge tracée entre 2 objets) */
+.moveable-guideline.moveable-gap {
+  background: #06B6D4 !important;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s ease-in;
+}
+
+@keyframes onair-blink {
+  0%, 100% { background-color: var(--onair-active); }
+  50%      { background-color: var(--onair-inactive); }
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  overflow: hidden;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: transparent;
+}
+button:focus,
+button:focus-visible {
+  outline: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+/* ===================================================================
+ * Moveable handles — design minimal et raffiné
+ * ================================================================ */
+
+/* Points de transformation (coins + milieux de côtés) */
+.moveable-control {
+  width: 7px !important;
+  height: 7px !important;
+  margin-left: -3.5px !important;
+  margin-top: -3.5px !important;
+  border-radius: 50% !important;
+  background: #0a0f1c !important;
+  border: 1.5px solid #3b82f6 !important;
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease !important;
+}
+.moveable-control:hover {
+  transform: scale(1.4);
+  background: #3b82f6 !important;
+  border-color: #ffffff !important;
+}
+.moveable-control:active {
+  transform: scale(1.2);
+  background: #2563eb !important;
+}
+
+/* Handles aux milieux des côtés — carrés pour suggérer le resize directionnel */
+.moveable-control.moveable-e,
+.moveable-control.moveable-w,
+.moveable-control.moveable-n,
+.moveable-control.moveable-s {
+  border-radius: 1.5px !important;
+  width: 6px !important;
+  height: 6px !important;
+  margin-left: -3px !important;
+  margin-top: -3px !important;
+}
+
+/* Ligne du bounding box — très fine */
+.moveable-line {
+  background: #3b82f6 !important;
+  box-shadow: none !important;
+}
+.moveable-line.moveable-direction {
+  width: 1px !important;
+  height: 1px !important;
+}
+
+/* Handle de rotation — pastille bleue distincte */
+.moveable-control.moveable-rotation {
+  width: 8px !important;
+  height: 8px !important;
+  margin-left: -4px !important;
+  margin-top: -4px !important;
+  background: #3b82f6 !important;
+  border: 1.5px solid #ffffff !important;
+}
+.moveable-control.moveable-rotation:hover {
+  background: #60a5fa !important;
+}
+
+/* Ligne qui relie l'objet au handle rotation */
+.moveable-line.moveable-rotation-line {
+  background: rgba(59, 130, 246, 0.5) !important;
+  width: 1px !important;
+}
+
+/* Stacking context : les handles Moveable restent SOUS les modales (z-50)
+ * pour ne pas rester visibles et cliquables par-dessus un modal ouvert. */
+.moveable-control-box,
+.moveable-area,
+.moveable-control,
+.moveable-line {
+  z-index: 30 !important;
+}

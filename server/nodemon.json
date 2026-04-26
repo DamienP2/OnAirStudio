@@ -1,0 +1,13 @@
+{
+  "watch": ["src/**/*.js"],
+  "ext": "js",
+  "ignore": [
+    "src/templates/**",
+    "src/uploads/**",
+    "src/branding/**",
+    "src/custom-settings.json",
+    "src/admin-password.json",
+    "node_modules/**"
+  ],
+  "delay": 300
+}

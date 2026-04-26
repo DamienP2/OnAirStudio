@@ -1,0 +1,20 @@
+[Unit]
+Description=OnAir Studio — serveur Node.js + Socket.IO
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=/opt/onair-studio/server
+Environment=HOME=/home/__USER__
+Environment=NODE_ENV=production
+Environment=PORT=__PORT__
+ExecStart=/usr/bin/node /opt/onair-studio/server/src/index.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,6 @@
+deploy/keys/onair_deploy text eol=lf
+deploy/keys/onair_deploy.pub text eol=lf
+*.sh text eol=lf
+*.service text eol=lf
+*.rules text eol=lf
+*.desktop text eol=lf

@@ -1,0 +1,94 @@
+{
+  "id": "veille",
+  "name": "Veille",
+  "category": "veille",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "backgroundColor": "#000000",
+    "backgroundImage": null,
+    "gridEnabled": true,
+    "gridSize": 50,
+    "gridColor": "#FFFFFF",
+    "gridOpacity": 0.08,
+    "snapEnabled": true,
+    "showMargins": true,
+    "showMidGuides": true,
+    "guides": []
+  },
+  "objects": [
+    {
+      "id": "analog-clock-1777133883043-fm6za",
+      "type": "analog-clock",
+      "x": 960,
+      "y": 72,
+      "width": 935,
+      "height": 935,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "variant": "current",
+        "showLabel": true,
+        "label": "",
+        "color": "#FFFFFF",
+        "timezone": "Europe/Paris",
+        "showSeconds": true,
+        "showMinutes": true
+      }
+    },
+    {
+      "id": "date-1777133955253-0esy8",
+      "type": "date",
+      "x": 1192,
+      "y": 731,
+      "width": 500,
+      "height": 80,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "format": "EEEE d MMMM yyyy",
+        "fontFamily": "Helvetica, sans-serif",
+        "color": "#5c5c5c",
+        "backgroundColor": "transparent",
+        "borderRadius": 0
+      }
+    },
+    {
+      "id": "logo-1777133994373-y901u",
+      "type": "logo",
+      "x": 306,
+      "y": 182,
+      "width": 350,
+      "height": 176,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "backgroundColor": "transparent",
+        "borderRadius": 0
+      }
+    },
+    {
+      "id": "text-1777134077903-i6vv6",
+      "type": "text",
+      "x": 109,
+      "y": 540,
+      "width": 743,
+      "height": 271,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "text": "{studioName}",
+        "fontFamily": "system-ui",
+        "color": "#595959",
+        "backgroundColor": "transparent",
+        "borderRadius": 0,
+        "padding": 8,
+        "textAlign": "center",
+        "fontWeight": "200",
+        "textTransform": "uppercase"
+      }
+    }
+  ],
+  "createdAt": "2026-04-25T16:17:58.924Z",
+  "updatedAt": "2026-04-25T16:22:25.440Z"
+}

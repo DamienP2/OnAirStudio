@@ -1,0 +1,27 @@
+# Données applicatives persistantes (préservées entre versions)
+server/src/custom-settings.json
+server/src/admin-password.json
+
+# Secret de chiffrement AES — généré au runtime, jamais versionné
+server/src/.encryption-key
+
+# Données calendriers — credentials OAuth + tokens chiffrés (runtime)
+server/src/calendar-credentials.json
+server/src/calendar-accounts.json
+
+# Builds
+client/dist/
+
+# Dépendances
+node_modules/
+.superpowers/
+
+# Données utilisateur (uploads + branding + templates — gérés à l'exécution,
+# jamais versionnés. Le bootstrap recrée les 3 factory templates au premier
+# démarrage si /templates est vide.)
+server/src/uploads/
+server/src/branding/
+server/src/templates/
+
+docs/
+tests/

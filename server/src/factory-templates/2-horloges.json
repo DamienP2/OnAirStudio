@@ -1,0 +1,139 @@
+{
+  "id": "2-horloges",
+  "name": "2 Horloges",
+  "category": "horloge",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "backgroundColor": "#000000",
+    "backgroundImage": null,
+    "gridEnabled": true,
+    "gridSize": 50,
+    "gridColor": "#FFFFFF",
+    "gridOpacity": 0.08,
+    "snapEnabled": true,
+    "showMargins": true,
+    "showMidGuides": true,
+    "guides": []
+  },
+  "objects": [
+    {
+      "id": "analog-clock-1777133349015-zkohz",
+      "type": "analog-clock",
+      "x": 25,
+      "y": 90,
+      "width": 900,
+      "height": 900,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "variant": "current",
+        "showLabel": true,
+        "label": "",
+        "color": "#FFFFFF",
+        "timezone": "Europe/Paris",
+        "showSeconds": true,
+        "showMinutes": true
+      }
+    },
+    {
+      "id": "analog-clock-1777133394529-31ajy",
+      "type": "analog-clock",
+      "x": 995,
+      "y": 90,
+      "width": 900,
+      "height": 900,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "variant": "remaining",
+        "showLabel": true,
+        "label": "",
+        "color": "#EF4444",
+        "timezone": "Europe/Paris",
+        "showSeconds": true,
+        "showMinutes": true
+      }
+    },
+    {
+      "id": "digital-clock-1777133460834-ds3n1",
+      "type": "digital-clock",
+      "x": 1217,
+      "y": 695,
+      "width": 449,
+      "height": 105,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "variant": "elapsed",
+        "showLabel": false,
+        "label": "",
+        "fontFamily": "JetBrains Mono",
+        "color": "#ffffff",
+        "backgroundColor": "#ef4444",
+        "borderRadius": 0,
+        "timezone": "Europe/Paris",
+        "showHours": true,
+        "showMinutes": true,
+        "showSeconds": true,
+        "flashOnLast10s": false
+      }
+    },
+    {
+      "id": "onair-badge-1777133548541-k9p3r",
+      "type": "onair-badge",
+      "x": 830,
+      "y": 25,
+      "width": 260,
+      "height": 90,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "text": "ON AIR",
+        "fontFamily": "Inter",
+        "color": "#FFFFFF",
+        "activeColor": "#EF4444",
+        "inactiveColor": "#374151",
+        "borderRadius": 8,
+        "previewActive": false
+      }
+    },
+    {
+      "id": "logo-1777133704796-udzjy",
+      "type": "logo",
+      "x": 25,
+      "y": 25,
+      "width": 200,
+      "height": 100,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "backgroundColor": "transparent",
+        "borderRadius": 0
+      }
+    },
+    {
+      "id": "text-1777133733693-gca7q",
+      "type": "text",
+      "x": 760,
+      "y": 990,
+      "width": 400,
+      "height": 62,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "text": "{studioName}",
+        "fontFamily": "Inter",
+        "color": "#6b6b6b",
+        "backgroundColor": "transparent",
+        "borderRadius": 0,
+        "padding": 8,
+        "textAlign": "center",
+        "fontWeight": "normal",
+        "textTransform": "uppercase"
+      }
+    }
+  ],
+  "createdAt": "2026-04-25T16:09:05.187Z",
+  "updatedAt": "2026-04-25T16:16:07.031Z"
+}
