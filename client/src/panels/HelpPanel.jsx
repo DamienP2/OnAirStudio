@@ -369,6 +369,14 @@ function SettingsContent() {
       </UL>
       <H2>Préréglages de durée</H2>
       <P>Les durées affichées comme raccourcis dans Contrôle. Ajoutez-en autant que souhaité ; un bouton <strong>Réinitialiser</strong> remet les valeurs par défaut.</P>
+      <H2>Arrêt automatique</H2>
+      <P>Cadran circulaire dédié dans Réglages — filet de sécurité qui coupe le chrono et la lampe ON AIR après N minutes de <em>dépassement</em> du temps imparti, si l'opérateur a oublié d'arrêter manuellement.</P>
+      <UL>
+        <li>Réglez la valeur en glissant le point sur le cadran (de 0 à 180 min).</li>
+        <li><strong>0 minute = désactivé</strong> (label OFF au centre du cadran). Dans ce cas vous DEVEZ arrêter le chrono à la main, sinon ON AIR reste allumé jusqu'au prochain arrêt manuel.</li>
+        <li>Valeur par défaut : 60 min — convient à la plupart des plateaux radio/TV.</li>
+        <li>L'arrêt auto ne se déclenche QU'APRÈS dépassement (chrono passé en négatif), pas pendant un chrono normal.</li>
+      </UL>
       <H2>Palette de couleurs</H2>
       <P>Une palette globale partagée par tous les pickers du designer. Voir la section <strong>Designer → Palette de couleurs</strong>.</P>
       <H2>Sécurité</H2>
@@ -930,6 +938,14 @@ function SettingsContentEN() {
       </UL>
       <H2>Duration presets</H2>
       <P>The durations shown as shortcuts in Control. Add as many as needed; a <strong>Reset</strong> button restores the defaults.</P>
+      <H2>Auto-stop</H2>
+      <P>Dedicated circular dial in Settings — safety net that stops the timer and turns off the ON AIR lamp after N minutes of <em>overrun</em>, if the operator forgot to stop manually.</P>
+      <UL>
+        <li>Adjust by dragging the point on the dial (0 to 180 min).</li>
+        <li><strong>0 minutes = disabled</strong> (OFF label in the dial center). In that case you MUST stop the timer manually, otherwise ON AIR stays lit until the next manual stop.</li>
+        <li>Default value: 60 min — suitable for most radio/TV setups.</li>
+        <li>Auto-stop only triggers AFTER overrun (timer gone negative), not during a normal countdown.</li>
+      </UL>
       <H2>Color palette</H2>
       <P>A global palette shared by every color picker in the designer. See the <strong>Designer → Color palette</strong> section.</P>
       <H2>Security</H2>
