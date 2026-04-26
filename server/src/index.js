@@ -1057,6 +1057,9 @@ app.post('/api/admin/reset/templates', requireAdminPassword, (req, res) => {
     const deletedTemplates = templatesManager.deleteAllTemplates();
     const deletedUploads = uploadsManager.deleteAllAssets();
     const deletedAccounts = calendarManager.deleteAllAccounts();
+    // Re-bootstrap des factory templates : on ne veut jamais laisser un studio
+    // avec aucun template (sinon /display reste noir, Contrôle est inutilisable).
+    bootstrapFactoryTemplates();
     io.emit('templatesListChanged', templatesManager.listTemplates());
     io.emit('calendarAccountsChanged');
     res.json({ ok: true, deletedTemplates, deletedUploads, deletedAccounts });
@@ -1124,6 +1127,9 @@ app.post('/api/admin/reset/all', requireAdminPassword, (req, res) => {
     const deletedUploads = uploadsManager.deleteAllAssets();
     const deletedAccounts = calendarManager.deleteAllAccounts();
     calendarManager.deleteAllCredentials();
+    // Re-bootstrap des factory templates pour ne jamais laisser le studio
+    // sans template actif (sinon /display reste noir).
+    bootstrapFactoryTemplates();
 
     // 2. Réglages : supprime le custom-settings.json + remet TOUS les champs
     // en mémoire aux valeurs par défaut d'usine.
