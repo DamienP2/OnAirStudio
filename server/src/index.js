@@ -988,18 +988,32 @@ app.post('/api/admin/update/check', requireAdminPassword, async (req, res) => {
 });
 
 // Déclencher la mise à jour (via onair-update.service)
-app.post('/api/admin/update', requireAdminPassword, async (req, res) => {
+//
+// Subtil : la règle sudoers (/etc/sudoers.d/onair-update) autorise EXACTEMENT
+// "/bin/systemctl start onair-update.service" sans aucun flag — toute autre
+// forme (ex. --no-block) déclenche un prompt de mot de passe et fait échouer
+// la commande non-interactive.
+//
+// On ne peut pas non plus AWAIT le `systemctl start` : Type=oneshot bloque
+// jusqu'à la fin de update.sh, qui stoppe le serveur Node en cours de route
+// → la réponse HTTP ne partirait jamais (browser : "Failed to fetch").
+//
+// Solution : spawn détaché avec `unref()` — la commande sudo continue à
+// vivre indépendamment du processus parent. On répond immédiatement au client
+// avant même que sudo n'ait fini de communiquer avec systemd.
+app.post('/api/admin/update', requireAdminPassword, (req, res) => {
   if (timerState.isRunning) {
     return res.status(409).json({
       error: 'Impossible de mettre à jour quand le timer est en marche. Stoppe-le d\'abord.'
     });
   }
   try {
-    // --no-block : systemctl rend la main IMMÉDIATEMENT au lieu d'attendre
-    // que le service oneshot termine. Indispensable ici car update.sh va
-    // stopper onair-server.service pendant l'exécution — si on bloquait,
-    // la réponse HTTP ne partirait jamais et le client verrait "Failed to fetch".
-    await execShell('sudo', ['-n', '/bin/systemctl', 'start', '--no-block', 'onair-update.service']);
+    const { spawn } = require('child_process');
+    const child = spawn('sudo', ['-n', '/bin/systemctl', 'start', 'onair-update.service'], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
     res.json({ started: true, startedAt: new Date().toISOString() });
     logAction('API', 'admin/update started');
   } catch (err) {
