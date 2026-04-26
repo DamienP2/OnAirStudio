@@ -113,7 +113,22 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, '../../client/dist')));
+// Serve le build client. Headers de cache différenciés :
+//  • index.html → no-cache : garantit que le browser pioche le NOUVEAU bundle
+//    (avec hash mis à jour) après chaque release. Sans ça, après une MAJ
+//    l'utilisateur garde l'ancien index.html et donc l'ancien JS, et l'UI
+//    affiche toujours l'ancienne version.
+//  • Le reste (assets/index-XXX.js + .css) → Vite génère des noms hashés,
+//    donc immutable safe : on laisse le cache long par défaut d'express.
+app.use(express.static(path.join(__dirname, '../../client/dist'), {
+  setHeaders: (res, filepath) => {
+    if (filepath.endsWith('index.html')) {
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+    }
+  }
+}));
 
 let timerState = {
   isRunning: false,
@@ -1827,11 +1842,16 @@ app.delete('/api/uploads/:assetId', requireAdminPassword, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Route catch-all pour le client React (déplacée juste avant le listen)
+// Route catch-all pour le client React (déplacée juste avant le listen).
+// no-cache pour les mêmes raisons que dans express.static plus haut :
+// après une mise à jour, on veut que le browser récupère le nouvel index.html.
 app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) {
         next(); // Passer au prochain middleware pour les routes API
     } else {
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
         res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
     }
 });

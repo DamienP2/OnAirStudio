@@ -3,6 +3,11 @@ import { useTimerState } from '../store/TimerContext';
 import { useT, useTr } from '../hooks/useT';
 import { getStoredAdminPassword, clearStoredAdminPassword } from './AdminAuthGate';
 
+// Header est toujours monté tant qu'un panel est affiché → l'endroit idéal
+// pour porter le check des MAJ. Hourly est suffisant pour un studio (les
+// releases sont peu fréquentes, on ne veut pas spammer GitHub).
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
+
 export default function Header() {
   const t = useT();
   const tr = useTr();
@@ -18,6 +23,30 @@ export default function Header() {
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
   }, []);
+
+  // Badge "NEW" : check périodique de la dispo d'une MAJ amont.
+  // Reste silencieux tant qu'aucune MAJ n'est dispo (pas de spam).
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  useEffect(() => {
+    if (!hasAuth) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch('/api/admin/update/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: getStoredAdminPassword() })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setUpdateAvailable(!!data.updatesAvailable);
+      } catch { /* offline ou serveur restart — silent retry au prochain tick */ }
+    };
+    // Petit délai initial pour laisser le serveur démarrer après refresh
+    const initial = setTimeout(check, 3000);
+    const interval = setInterval(check, UPDATE_CHECK_INTERVAL_MS);
+    return () => { cancelled = true; clearTimeout(initial); clearInterval(interval); };
+  }, [hasAuth]);
   const handleLogout = () => {
     clearStoredAdminPassword();
     window.location.reload();
@@ -61,6 +90,14 @@ export default function Header() {
         <span className="text-[10px] font-mono text-slate-500 bg-slate-800/60 border border-white/5 px-1.5 py-0.5 rounded" title={t('header.version')}>
           v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
         </span>
+        {updateAvailable && (
+          <span
+            className="text-[9px] font-bold uppercase tracking-widest text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 px-1.5 py-0.5 rounded animate-pulse"
+            title={tr({ fr: 'Une mise à jour est disponible — voir Réglages → Mises à jour', en: 'An update is available — see Settings → Updates' })}
+          >
+            NEW
+          </span>
+        )}
         <span className="text-slate-700 select-none">|</span>
         <span className="text-slate-400 text-sm">{studioName}</span>
       </div>

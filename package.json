@@ -1,6 +1,6 @@
 {
   "name": "onair-studio",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "scripts": {
     "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
     "install-all": "npm install && cd client && npm install && cd ../server && npm install"
