@@ -1262,8 +1262,12 @@ app.post('/api/branding/logo', uploadMiddleware.single('file'), requireAdminPass
     }
     const filepath = path.join(brandingDir, `logo.${ext}`);
     fs.writeFileSync(filepath, req.file.buffer);
-    res.json({ ok: true, ext, sizeBytes: req.file.size });
+    const version = Date.now();
+    res.json({ ok: true, ext, sizeBytes: req.file.size, version });
     logAction('API', 'branding/logo upload', { ext, size: req.file.size });
+    // Notifie tous les clients connectés (display, design, control) pour
+    // qu'ils invalident leur cache d'image et rechargent /api/branding/logo.
+    io.emit('brandingChanged', { hasLogo: true, version });
     // Réajuste les cadres logo de tous les templates au nouveau ratio (async,
     // pas bloquant pour la réponse HTTP).
     reshapeLogosForCurrentBranding().catch(e =>
@@ -1279,8 +1283,10 @@ app.delete('/api/branding/logo', requireAdminPassword, (req, res) => {
     const found = findLogoFile();
     if (!found) return res.json({ ok: true, removed: false });
     fs.unlinkSync(found.path);
-    res.json({ ok: true, removed: true });
+    const version = Date.now();
+    res.json({ ok: true, removed: true, version });
     logAction('API', 'branding/logo delete', {});
+    io.emit('brandingChanged', { hasLogo: false, version });
     // Réajuste les cadres logo au ratio du logo de fallback (logo bundle de l'app).
     reshapeLogosForCurrentBranding().catch(e =>
       console.warn('[branding] reshape post-delete échoué:', e.message));
