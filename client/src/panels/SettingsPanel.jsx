@@ -60,8 +60,112 @@ const Icons = {
   cpu: <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/></svg>,
   download: <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
   trash: <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>,
-  palette: <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.5 0 1-.4 1-1 0-.6-.5-1-1-1.5s-.5-1 0-1.5 1.5-.5 2-.5h1.5c2.4 0 4.5-2 4.5-4.5C20 6.5 16.4 2 12 2z"/></svg>
+  palette: <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.5 0 1-.4 1-1 0-.6-.5-1-1-1.5s-.5-1 0-1.5 1.5-.5 2-.5h1.5c2.4 0 4.5-2 4.5-4.5C20 6.5 16.4 2 12 2z"/></svg>,
+  shieldClock: <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
 };
+
+// CircularDial — sélecteur circulaire pour valeur entière. Drag du handle
+// le long de l'arc pour ajuster, valeur affichée au centre.
+// Limites : 0 (signifie "désactivé") jusqu'à `max` minutes. L'arc remplit
+// 270° (orientation 7h→5h horaire) pour laisser une zone "OFF" visible en bas.
+function CircularDial({ value, onChange, max = 180, accent = '#fbbf24' }) {
+  const svgRef = React.useRef(null);
+  const SIZE = 132;
+  const RADIUS = 52;
+  const STROKE = 8;
+  const CENTER = SIZE / 2;
+  // Arc utile : 270° (de -135° à +135° par rapport au top, sweep horaire).
+  // En radians : startAngle = -3π/4, endAngle = +3π/4 (135° de chaque côté du bas).
+  const ARC_SPAN = (Math.PI * 3) / 2; // 270°
+  const ARC_START = -ARC_SPAN / 2;    // angle du début (côté gauche en bas)
+
+  // value (0..max) → angle (rad) sur l'arc, mesuré horaire depuis le BAS
+  const valueToAngle = (v) => ARC_START + (Math.max(0, Math.min(v, max)) / max) * ARC_SPAN;
+
+  // Convertit (dx, dy) en angle horaire depuis le BAS de l'horloge.
+  // Atan2(dx, dy) : dx>0,dy>0 (bas-droite) ≈ +π/4 ; dx>0,dy<0 (haut-droite) ≈ +3π/4 ; etc.
+  // Result range [-π, +π] avec 0 = bas pile.
+  const pointerToValue = (clientX, clientY) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    let a = Math.atan2(dx, dy); // 0 = bas, +π/2 = droite, +π = haut, etc.
+    // Clamp dans la plage de l'arc [-3π/4, +3π/4]. Hors zone = snap aux extrémités.
+    if (a < ARC_START) a = ARC_START;
+    if (a > ARC_START + ARC_SPAN) a = ARC_START + ARC_SPAN;
+    const ratio = (a - ARC_START) / ARC_SPAN;
+    return Math.round(ratio * max);
+  };
+
+  // Trace un arc SVG du début jusqu'à `endAngle`. Tous les angles mesurés
+  // horaire depuis le BAS pour un calcul X/Y simple : x = sin(a), y = cos(a).
+  const angleToXY = (a) => ({
+    x: CENTER + RADIUS * Math.sin(a),
+    y: CENTER + RADIUS * Math.cos(a)
+  });
+
+  const trackStart = angleToXY(ARC_START);
+  const trackEnd = angleToXY(ARC_START + ARC_SPAN);
+  const trackPath = `M ${trackStart.x} ${trackStart.y} A ${RADIUS} ${RADIUS} 0 1 0 ${trackEnd.x} ${trackEnd.y}`;
+
+  const valueAngle = valueToAngle(value);
+  const valueEnd = angleToXY(valueAngle);
+  const valueLargeArc = (valueAngle - ARC_START) > Math.PI ? 1 : 0;
+  const valuePath = `M ${trackStart.x} ${trackStart.y} A ${RADIUS} ${RADIUS} 0 ${valueLargeArc} 0 ${valueEnd.x} ${valueEnd.y}`;
+
+  const handlePosition = angleToXY(valueAngle);
+
+  const handlePointer = (e) => {
+    e.preventDefault();
+    onChange(pointerToValue(e.clientX, e.clientY));
+  };
+  const onPointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    handlePointer(e);
+  };
+  const onPointerMove = (e) => {
+    if (e.buttons !== 1 && e.pressure === 0) return;
+    handlePointer(e);
+  };
+
+  const isOff = value === 0;
+  const accentColor = isOff ? '#475569' : accent;
+  const valueDisplay = isOff ? 'OFF' : String(value);
+  const subLabel = isOff ? 'désactivé' : 'min';
+
+  return (
+    <svg
+      ref={svgRef}
+      width={SIZE} height={SIZE}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      style={{ touchAction: 'none', cursor: 'pointer' }}
+    >
+      {/* Track grise */}
+      <path d={trackPath} fill="none" stroke="#1e293b" strokeWidth={STROKE} strokeLinecap="round" />
+      {/* Arc valeur (caché en mode OFF pour cohérence visuelle) */}
+      {!isOff && (
+        <path d={valuePath} fill="none" stroke={accentColor} strokeWidth={STROKE} strokeLinecap="round"
+          style={{ transition: 'stroke 0.15s' }} />
+      )}
+      {/* Handle */}
+      <circle cx={handlePosition.x} cy={handlePosition.y} r={STROKE - 1}
+        fill={accentColor} stroke="#0f172a" strokeWidth="2" />
+      {/* Centre : valeur + label */}
+      <text x={CENTER} y={CENTER + 2} textAnchor="middle"
+        fill={isOff ? '#64748b' : '#f1f5f9'}
+        style={{ fontSize: isOff ? '18px' : '24px', fontFamily: 'ui-monospace, monospace', fontWeight: 'bold' }}>
+        {valueDisplay}
+      </text>
+      <text x={CENTER} y={CENTER + 22} textAnchor="middle"
+        fill="#64748b" style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px' }}>
+        {subLabel}
+      </text>
+    </svg>
+  );
+}
 
 function ResetIcon({ onClick, show, title }) {
   if (!show) return null;
@@ -152,7 +256,9 @@ export default function SettingsPanel() {
   const [settings, setSettings] = useState({
     ntpServers: ['', '', ''], studioName: '',
     timezone: DEFAULTS.timezone, language: DEFAULTS.language,
-    relayType: 'usb', relayIp: '', relayChannels: 2, presetTimes: [], colorPalette: []
+    relayType: 'usb', relayIp: '', relayChannels: 2,
+    autoStopAfterMinutes: 60,
+    presetTimes: [], colorPalette: []
   });
   const [originalSettings, setOriginalSettings] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle');
@@ -208,6 +314,7 @@ export default function SettingsPanel() {
         language: s.language || DEFAULTS.language,
         relayType: s.relayType || 'usb', relayIp: s.relayIp || '',
         relayChannels: Number.isFinite(s.relayChannels) && s.relayChannels > 0 ? s.relayChannels : 2,
+        autoStopAfterMinutes: Number.isFinite(s.autoStopAfterMinutes) && s.autoStopAfterMinutes >= 0 ? s.autoStopAfterMinutes : 60,
         presetTimes: Array.isArray(s.presetTimes) ? s.presetTimes : [],
         colorPalette: Array.isArray(s.colorPalette) ? s.colorPalette : []
       };
@@ -500,8 +607,8 @@ export default function SettingsPanel() {
       <div className="flex-1 min-h-0 grid grid-cols-12 gap-3 [grid-template-rows:1fr_1fr] auto-rows-fr">
 
         {/* ROW 1 */}
-        {/* TIME / NTP — col-span-5 */}
-        <Card icon={Icons.clock} accent="cyan" title={t('settings.time.title')} className="col-start-1 col-span-5 row-start-1">
+        {/* TIME / NTP — col-span-3 (compacté pour donner plus de place aux presets) */}
+        <Card icon={Icons.clock} accent="cyan" title={t('settings.time.title')} className="col-start-1 col-span-3 row-start-1">
           <div className="grid grid-cols-2 gap-4 h-full">
             <div className="space-y-3">
               <Field label={t('settings.time.tz')} isModified={tzModified} onReset={() => resetField('timezone')} resetTitle={t('common.reset_default')}>
@@ -552,7 +659,29 @@ export default function SettingsPanel() {
           </div>
         </Card>
 
-        {/* PRESETS — row 1, cols 6-8 */}
+        {/* AUTO-STOP — row 1, cols 4-5 (filet de sécurité après dépassement) */}
+        <Card
+          icon={Icons.shieldClock} accent="emerald"
+          title={tr({ fr: 'Arrêt auto', en: 'Auto-stop' })}
+          className="col-start-4 col-span-2 row-start-1"
+        >
+          <div className="flex flex-col items-center justify-center h-full gap-2 select-none">
+            <CircularDial
+              value={settings.autoStopAfterMinutes}
+              onChange={(v) => setSettingsField('autoStopAfterMinutes', v)}
+              max={180}
+              accent="#34d399"
+            />
+            <p className="text-[9px] uppercase tracking-[0.18em] text-slate-500 text-center leading-tight">
+              {tr({
+                fr: 'Coupe ON AIR après dépassement',
+                en: 'Cuts ON AIR after overrun'
+              })}
+            </p>
+          </div>
+        </Card>
+
+        {/* PRESETS — row 1, cols 6-8 (récupère la place libérée par TIME compacté) */}
         <Card
           icon={Icons.zap} accent="amber"
           title={t('settings.presets.title')}

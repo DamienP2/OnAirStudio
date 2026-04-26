@@ -44,6 +44,12 @@ const defaultConfig = {
   // usages futurs (témoin studio actif, lampe accueil, etc.).
   defaultRelayChannels: 2,
 
+  // Filet de sécurité : arrêt automatique du chrono après N minutes de
+  // dépassement. Empêche que la lampe ON AIR reste allumée toute la nuit
+  // si l'opérateur oublie d'arrêter manuellement à la fin de l'émission.
+  // 0 = désactivé (l'opérateur doit toujours arrêter à la main).
+  defaultAutoStopAfterMinutes: 60,
+
   // Palette de couleurs partagée — couleurs par défaut adaptées au broadcast.
   // L'utilisateur peut tout supprimer/renommer/réorganiser via SettingsPanel.
   // Format : { id: string, name: string, value: '#RRGGBBAA' }
@@ -80,6 +86,7 @@ function loadCustomSettings() {
     relayType: defaultConfig.defaultRelayType,
     relayIp: defaultConfig.defaultRelayIp,
     relayChannels: defaultConfig.defaultRelayChannels,
+    autoStopAfterMinutes: defaultConfig.defaultAutoStopAfterMinutes,
     defaultDisplayMode: defaultConfig.defaultDisplayMode,
     colors: { ...defaultConfig.defaultColors },
     presetTimes: [...defaultConfig.defaultDurations],
@@ -123,6 +130,11 @@ module.exports = {
   relayChannels: Number.isFinite(currentSettings.relayChannels) && currentSettings.relayChannels > 0
     ? currentSettings.relayChannels
     : defaultConfig.defaultRelayChannels,
+  // 0 désactive le filet de sécurité — accepté. Les valeurs négatives ou non
+  // numériques retombent sur le défaut (60 min).
+  autoStopAfterMinutes: Number.isFinite(currentSettings.autoStopAfterMinutes) && currentSettings.autoStopAfterMinutes >= 0
+    ? Math.floor(currentSettings.autoStopAfterMinutes)
+    : defaultConfig.defaultAutoStopAfterMinutes,
   defaultDisplayMode: currentSettings.defaultDisplayMode,
   defaultColors: currentSettings.colors,
   defaultDurations: currentSettings.presetTimes,

@@ -677,13 +677,14 @@ setInterval(async () => {
     // Vérifier si le temps est négatif
     if (timerState.remainingTime < 0) {
       // Si c'est la première fois qu'on passe en négatif
-      if (!autoStopTimeout) {
-        // Programmer l'arrêt automatique 1h après la fin du timer.
-        // Filet de sécurité si l'opérateur oublie d'arrêter manuellement.
+      // Filet de sécurité configurable dans Réglages — par défaut 60 min.
+      // 0 désactive le filet (l'opérateur doit arrêter à la main).
+      const minutes = Number.isFinite(config.autoStopAfterMinutes) ? config.autoStopAfterMinutes : 60;
+      if (!autoStopTimeout && minutes > 0) {
         autoStopTimeout = setTimeout(() => {
           stopTimer();
           autoStopTimeout = null;
-        }, 3600 * 1000);
+        }, minutes * 60 * 1000);
       }
     } else {
       // Si on revient en positif (cas improbable mais par sécurité)
@@ -817,6 +818,7 @@ io.on('connection', (socket) => {
       relayType: config.relayType || 'usb',
       relayIp: config.relayIp || '',
       relayChannels: config.relayChannels || 2,
+      autoStopAfterMinutes: Number.isFinite(config.autoStopAfterMinutes) ? config.autoStopAfterMinutes : 60,
       defaultDisplayMode: config.defaultDisplayMode,
       colors: { ...config.defaultColors },
       presetTimes: [...config.defaultDurations],
@@ -856,6 +858,9 @@ io.on('connection', (socket) => {
     if (Number.isFinite(updatedConfig.relayChannels) && updatedConfig.relayChannels > 0) {
       config.relayChannels = updatedConfig.relayChannels;
     }
+    if (Number.isFinite(updatedConfig.autoStopAfterMinutes) && updatedConfig.autoStopAfterMinutes >= 0) {
+      config.autoStopAfterMinutes = Math.floor(updatedConfig.autoStopAfterMinutes);
+    }
     config.defaultDisplayMode = updatedConfig.defaultDisplayMode;
     config.defaultColors = { ...updatedConfig.colors };
     config.defaultDurations = [...updatedConfig.presetTimes];
@@ -880,6 +885,7 @@ io.on('connection', (socket) => {
       relayType: config.relayType,
       relayIp: config.relayIp,
       relayChannels: config.relayChannels,
+      autoStopAfterMinutes: config.autoStopAfterMinutes,
       defaultDisplayMode: config.defaultDisplayMode,
       colors: { ...config.defaultColors },
       presetTimes: [...config.defaultDurations],
