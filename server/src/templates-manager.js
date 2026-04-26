@@ -206,6 +206,37 @@ function getActiveTemplateForMode(mode) {
   return getTemplate(id);
 }
 
+// Réajuste tous les objets `logo` de tous les templates en gardant leur
+// largeur courante et en recalculant la hauteur selon le nouveau ratio (W/H).
+// Appelé après upload/delete du logo studio dans Réglages — garantit que les
+// cadres logo dans les templates suivent le ratio de l'image affichée.
+// Renvoie le nombre de templates effectivement modifiés.
+function reshapeAllLogosToRatio(ratio) {
+  if (!ratio || !isFinite(ratio) || ratio <= 0) return 0;
+  const idx = readIndex();
+  let touched = 0;
+  for (const entry of idx.templates) {
+    const tpl = getTemplate(entry.id);
+    if (!tpl || !Array.isArray(tpl.objects)) continue;
+    let modified = false;
+    for (const o of tpl.objects) {
+      if (o.type === 'logo' && typeof o.width === 'number' && o.width > 0) {
+        const newH = Math.round(o.width / ratio);
+        if (newH !== o.height) {
+          o.height = newH;
+          modified = true;
+        }
+      }
+    }
+    if (modified) {
+      tpl.updatedAt = new Date().toISOString();
+      writeTemplateFile(tpl);
+      touched++;
+    }
+  }
+  return touched;
+}
+
 // Supprime TOUS les templates utilisateurs et réinitialise l'index.
 // Ne touche pas aux fichiers factory dans server/src/factory-templates/.
 function deleteAllTemplates() {
@@ -224,5 +255,6 @@ module.exports = {
   listTemplates, getTemplate, createTemplate, updateTemplate,
   deleteTemplate, deleteAllTemplates, setActiveForMode,
   getActiveTemplateIdForMode, getActiveTemplateForMode,
+  reshapeAllLogosToRatio,
   TEMPLATES_DIR, INDEX_FILE
 };

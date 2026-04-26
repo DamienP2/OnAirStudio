@@ -27,13 +27,13 @@ export function fitDimensions(natural, max = MAX_DIMENSION_DEFAULT) {
   return { width, height };
 }
 
-// Recalcule width/height pour matcher un nouveau ratio en gardant la dimension
-// principale (la plus grande) constante. Utile quand on change d'image dans
-// un widget existant — on ne veut pas qu'il "saute" en taille.
-export function reshapeToRatio(currentWidth, currentHeight, ratio) {
-  const main = Math.max(currentWidth || 0, currentHeight || 0) || 300;
-  if (ratio >= 1) {
-    return { width: main, height: Math.round(main / ratio) };
-  }
-  return { width: Math.round(main * ratio), height: main };
+// Recalcule height en préservant la WIDTH courante selon le nouveau ratio.
+// Choix : la largeur est l'axe que l'utilisateur règle le plus souvent dans
+// une mise en page broadcast (rangées horizontales, colonnes alignées) — la
+// préserver évite que le template "saute" quand on remplace une image.
+// `currentHeight` est gardé dans la signature pour compatibilité API mais ignoré.
+export function reshapeToRatio(currentWidth, _currentHeight, ratio) {
+  const w = currentWidth || 300;
+  if (!ratio || !isFinite(ratio) || ratio <= 0) return { width: w, height: w };
+  return { width: w, height: Math.round(w / ratio) };
 }

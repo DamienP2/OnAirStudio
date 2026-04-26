@@ -1197,6 +1197,46 @@ function findLogoFile() {
   return null;
 }
 
+// Recalcule la hauteur de tous les objets `logo` dans tous les templates pour
+// matcher le ratio du logo actuellement affiché. Appelé après upload OU delete
+// du logo studio. Si pas de logo perso → fallback sur le logo bundle de l'app
+// (client/dist/logo.png ou client/public/logo.png).
+async function reshapeLogosForCurrentBranding() {
+  let imgPath;
+  const found = findLogoFile();
+  if (found) {
+    imgPath = found.path;
+  } else {
+    const fallbacks = [
+      path.join(__dirname, '..', '..', 'client', 'dist', 'logo.png'),
+      path.join(__dirname, '..', '..', 'client', 'public', 'logo.png')
+    ];
+    imgPath = fallbacks.find(p => fs.existsSync(p));
+  }
+  if (!imgPath) return;
+
+  let width, height;
+  try {
+    // sharp lit PNG/JPG/WebP. SVG : sharp lit aussi mais peut nécessiter une
+    // taille cible — on lit metadata qui renvoie la viewBox naturelle si dispo.
+    const sharp = require('sharp');
+    const meta = await sharp(imgPath).metadata();
+    width = meta.width;
+    height = meta.height;
+  } catch (e) {
+    console.warn('[branding] lecture dimensions logo échouée:', e.message);
+    return;
+  }
+  if (!width || !height) return;
+
+  const ratio = width / height;
+  const n = templatesManager.reshapeAllLogosToRatio(ratio);
+  if (n > 0) {
+    io.emit('templatesListChanged');
+    console.log(`[branding] ${n} template(s) avec objets logo reshapés (ratio ${ratio.toFixed(3)})`);
+  }
+}
+
 // GET public — sert le logo si présent, 404 sinon
 app.get('/api/branding/logo', (req, res) => {
   const found = findLogoFile();
@@ -1221,6 +1261,10 @@ app.post('/api/branding/logo', uploadMiddleware.single('file'), requireAdminPass
     fs.writeFileSync(filepath, req.file.buffer);
     res.json({ ok: true, ext, sizeBytes: req.file.size });
     logAction('API', 'branding/logo upload', { ext, size: req.file.size });
+    // Réajuste les cadres logo de tous les templates au nouveau ratio (async,
+    // pas bloquant pour la réponse HTTP).
+    reshapeLogosForCurrentBranding().catch(e =>
+      console.warn('[branding] reshape post-upload échoué:', e.message));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1234,6 +1278,9 @@ app.delete('/api/branding/logo', requireAdminPassword, (req, res) => {
     fs.unlinkSync(found.path);
     res.json({ ok: true, removed: true });
     logAction('API', 'branding/logo delete', {});
+    // Réajuste les cadres logo au ratio du logo de fallback (logo bundle de l'app).
+    reshapeLogosForCurrentBranding().catch(e =>
+      console.warn('[branding] reshape post-delete échoué:', e.message));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
