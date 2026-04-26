@@ -116,7 +116,7 @@ Apple iCloud), flux vidéo NDI, contrôle distant via Stream Deck.
 ```bash
 git clone https://github.com/DamienP2/OnAirStudio.git /tmp/onair-install
 cd /tmp/onair-install
-sudo ./install.sh
+sudo ./launch.sh
 ```
 
 ### Pendant l'exécution
