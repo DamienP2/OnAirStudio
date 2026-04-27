@@ -2,7 +2,7 @@
 Type=Application
 Name=OnAir Display
 Comment=Kiosk Chrome plein écran pour l'affichage studio
-Exec=/usr/bin/google-chrome --kiosk --incognito --noerrdialogs --no-first-run --disable-notifications --disable-infobars --disable-session-crashed-bubble --disable-features=TranslateUI --password-store=basic --app=http://localhost:__PORT__/display
+Exec=/usr/bin/google-chrome --kiosk --incognito --noerrdialogs --no-first-run --disable-notifications --disable-infobars --disable-session-crashed-bubble --disable-features=TranslateUI --password-store=basic --app=file:///opt/onair-studio/client/dist/loading.html?port=__PORT__
 X-GNOME-Autostart-enabled=true
-X-GNOME-Autostart-Delay=5
+X-GNOME-Autostart-Delay=2
 Terminal=false

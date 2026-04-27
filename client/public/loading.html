@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OnAir Studio — Démarrage</title>
+  <style>
+    :root {
+      --accent: #e11d48;
+      --bg: #06090f;
+      --surface: #0f172a;
+      --border: rgba(255,255,255,0.08);
+      --fg: #cbd5e1;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%; margin: 0;
+      background: var(--bg); color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
+    body {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 24px;
+      animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .logo {
+      width: 320px; height: auto; max-width: 50vw;
+      opacity: 0.95;
+      filter: drop-shadow(0 0 32px rgba(225, 29, 72, 0.18));
+    }
+
+    .spinner {
+      width: 48px; height: 48px;
+      border: 3px solid rgba(255, 255, 255, 0.06);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #f1f5f9;
+    }
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: ui-monospace, "SF Mono", monospace;
+      min-height: 18px;
+      letter-spacing: 0.02em;
+    }
+    .status.error {
+      color: #f87171;
+    }
+
+    .progress-wrap {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--border);
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.3s ease-out;
+      width: 0%;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 18px; right: 18px;
+      font-size: 10px;
+      color: var(--muted);
+      font-family: ui-monospace, monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <img src="logo.png" alt="OnAir Studio" class="logo" onerror="this.style.display='none'">
+  <div class="spinner"></div>
+  <div class="title">OnAir Studio</div>
+  <div class="status" id="status">Démarrage…</div>
+  <div class="progress-wrap"><div class="progress-bar" id="bar"></div></div>
+  <div class="footer">DISPLAY · BOOT</div>
+
+  <script>
+    // Page de boot : poll le serveur Node, redirige vers /display dès qu'il répond.
+    // Lance via le file:// schema dans Chrome kiosk avant que le serveur ne soit prêt.
+    // Le port est passé en query param (?port=3333) injecté à l'install via sed.
+    const params = new URLSearchParams(window.location.search);
+    const port = params.get('port') || '3333';
+    const probeUrl = `http://localhost:${port}/api/timer/state`;
+    const targetUrl = `http://localhost:${port}/display`;
+
+    const MAX_ATTEMPTS = 120;     // ~2 min max (1 attempt/s)
+    const POLL_INTERVAL_MS = 1000;
+    let attempts = 0;
+    let consecutiveFails = 0;
+
+    const statusEl = document.getElementById('status');
+    const barEl = document.getElementById('bar');
+
+    function setStatus(text, isError) {
+      statusEl.textContent = text;
+      statusEl.classList.toggle('error', !!isError);
+    }
+
+    // Probe via <img> au lieu de fetch — évite tout problème CORS file:// → http://
+    // (les loads d'images ne sont pas soumis à CORS pour l'événement load/error).
+    function probe() {
+      attempts++;
+      // Petite barre de progression visuelle (cap à 95% — atteint 100% au succès)
+      const pct = Math.min(95, (attempts / MAX_ATTEMPTS) * 100);
+      barEl.style.width = pct + '%';
+
+      const img = new Image();
+      const probeImg = `http://localhost:${port}/logo.png?_=${Date.now()}`;
+      let settled = false;
+      const onResult = (ok) => {
+        if (settled) return;
+        settled = true;
+        if (ok) {
+          consecutiveFails = 0;
+          setStatus('Prêt — redirection…');
+          barEl.style.width = '100%';
+          setTimeout(() => window.location.replace(targetUrl), 250);
+        } else {
+          consecutiveFails++;
+          if (attempts >= MAX_ATTEMPTS) {
+            setStatus('Le serveur ne répond pas après 2 min. Vérifie le service onair-server.', true);
+            return;
+          }
+          setStatus(`Attente du serveur (${attempts}s)`);
+          setTimeout(probe, POLL_INTERVAL_MS);
+        }
+      };
+      img.onload = () => onResult(true);
+      img.onerror = () => onResult(false);
+      // Timeout dur si l'image ne réagit pas (rare sur localhost)
+      setTimeout(() => onResult(false), 800);
+      img.src = probeImg;
+    }
+
+    // Petit délai initial pour laisser Chrome poser le DOM proprement
+    setTimeout(probe, 200);
+  </script>
+</body>
+</html>
