@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTimerState } from '../store/TimerContext';
 import { useT, useTr } from '../hooks/useT';
-import { getStoredAdminPassword, clearStoredAdminPassword } from './AdminAuthGate';
+import { getStoredAdminPassword, clearStoredAdminPassword, AUTH_CHANGED_EVENT } from './AdminAuthGate';
 
 // Header est toujours monté tant qu'un panel est affiché → l'endroit idéal
 // pour porter le check des MAJ. Hourly est suffisant pour un studio (les
@@ -18,10 +18,19 @@ export default function Header() {
   useEffect(() => {
     // Re-vérifie au mount (utile si on vient de s'authentifier dans un autre composant)
     setHasAuth(!!getStoredAdminPassword());
-    // Écoute les changements de storage (autres onglets)
+    // 2 sources d'événements :
+    //   - `storage` : changements depuis un AUTRE onglet (ne fire JAMAIS pour
+    //     l'onglet courant — limitation web standard).
+    //   - AUTH_CHANGED_EVENT : custom event fired par AdminAuthGate dans
+    //     l'onglet courant après login/logout. Sans ça, le bouton déconnexion
+    //     ne s'affiche qu'après refresh manuel.
     const handler = () => setHasAuth(!!getStoredAdminPassword());
     window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener(AUTH_CHANGED_EVENT, handler);
+    return () => {
+      window.removeEventListener('storage', handler);
+      window.removeEventListener(AUTH_CHANGED_EVENT, handler);
+    };
   }, []);
 
   // Badge "NEW" : check périodique de la dispo d'une MAJ amont.
