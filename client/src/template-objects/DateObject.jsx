@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { format } from 'date-fns';
 import { fr, enGB } from 'date-fns/locale';
 import { useTimerState } from '../store/TimerContext';
@@ -9,12 +9,11 @@ function localeFor(lang) {
 }
 
 export default function DateObject({ props }) {
-  const { language } = useTimerState();
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(t);
-  }, []);
+  const { language, serverTimeMs } = useTimerState();
+  // Pas de tick local : on rafraîchit à chaque timeUpdate du serveur (1Hz).
+  // Évite l'usage de new Date() qui serait faux sur un kiosk avec horloge
+  // système désynchro. serverTimeMs=0 (pas encore reçu) → fallback Date.now().
+  const now = new Date(serverTimeMs || Date.now());
   const locale = localeFor(language);
   const text = format(now, props.format || 'EEEE d MMMM yyyy', { locale });
   const fontFamily = props.fontFamily || 'Inter, system-ui, sans-serif';

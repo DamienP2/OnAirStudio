@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import AnalogClock from '../components/AnalogClock';
 import { useTimerState } from '../store/TimerContext';
 
@@ -43,18 +43,20 @@ function formatTzTime(date, tz) {
 // pendant un resize Moveable. Le clock reste toujours carré.
 export default function AnalogClockObject({ variant: variantProp, props }) {
   const variant = props.variant || variantProp || 'current';
-  const { currentTime, remaining, elapsed, isNTPActive, timezone: appTz } = useTimerState();
+  const { currentTime, remaining, elapsed, isNTPActive, timezone: appTz, serverTimeMs } = useTimerState();
 
-  // Si une timezone custom est définie pour le variant 'current', on calcule
-  // l'heure côté client (tick 1Hz) dans ce tz spécifique.
-  const customTz = variant === 'current' && props.timezone ? props.timezone : null;
-  const [tzNow, setTzNow] = useState(() => formatTzTime(new Date(), customTz));
-  useEffect(() => {
-    if (!customTz) { setTzNow(null); return; }
-    setTzNow(formatTzTime(new Date(), customTz));
-    const id = setInterval(() => setTzNow(formatTzTime(new Date(), customTz)), 1000);
-    return () => clearInterval(id);
-  }, [customTz]);
+  // Si une timezone custom est définie ET différente du fuseau studio,
+  // on reformate l'heure NTP serveur (serverTimeMs) dans ce tz spécifique.
+  // Si la tz custom == tz studio, on retombe sur currentTime (déjà formaté).
+  // Indispensable d'utiliser serverTimeMs (et non new Date()) pour que /display
+  // sur un PC kiosk dont l'horloge système est désynchro affiche quand même
+  // l'heure correcte.
+  const customTz = variant === 'current' && props.timezone && props.timezone !== appTz
+    ? props.timezone
+    : null;
+  const tzNow = customTz
+    ? formatTzTime(new Date(serverTimeMs || Date.now()), customTz)
+    : null;
 
   const timeValue = variant === 'current'
     ? (tzNow || currentTime)
