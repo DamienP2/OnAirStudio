@@ -52,11 +52,30 @@ run_preflight() {
     fi
     log_ok "Environnement graphique détecté"
 
-    # Connectivité Internet
-    if ! curl -fsSI --max-time 5 https://deb.nodesource.com >/dev/null 2>&1; then
-        die "Pas de connexion Internet (ou deb.nodesource.com injoignable). Vérifie le réseau."
+    # Connectivité Internet — on teste plusieurs cibles en parallèle ; il
+    # suffit qu'une réponde pour valider que l'install peut continuer. Évite
+    # le faux-positif quand un domaine spécifique est temporairement indispo.
+    local probes=(
+        "https://github.com"
+        "https://deb.nodesource.com"
+        "https://dl.google.com"
+        "https://1.1.1.1"
+    )
+    local connected=0
+    local probe_ok=""
+    for url in "${probes[@]}"; do
+        if curl -fsSI --max-time 4 "$url" >/dev/null 2>&1; then
+            connected=1
+            probe_ok="$url"
+            break
+        fi
+    done
+    if [[ "$connected" -eq 0 ]]; then
+        die "Pas de connexion Internet — aucune des cibles de test n'a répondu (${probes[*]}).
+   Vérifie : interface réseau active, DNS, pare-feu, proxy.
+   Pour diagnostiquer : curl -v https://github.com"
     fi
-    log_ok "Connexion Internet OK"
+    log_ok "Connexion Internet OK (via ${probe_ok})"
 
     # Espace disque sur /opt
     local free_mb
