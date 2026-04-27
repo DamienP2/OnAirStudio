@@ -555,28 +555,58 @@ export default function ControlPanel() {
             )}
           </div>
 
-          {/* ON AIR mega button — lié au relais USB. Désactivé si pas de relais connecté. */}
-          <div className="p-4 border-b border-white/5">
-            <button
-              onClick={() => { if (timerState.usbRelayStatus) socket.emit('setOnAir', !isOnAir); }}
-              disabled={!timerState.usbRelayStatus}
-              title={timerState.usbRelayStatus ? undefined : t('control.onair.tooltip_disabled')}
-              className={`w-full py-4 rounded-md border font-black text-xl uppercase tracking-widest transition-all duration-300 flex flex-col items-center justify-center gap-0.5 ${
-                !timerState.usbRelayStatus
-                  ? 'bg-slate-900/60 border-white/5 text-slate-600 cursor-not-allowed'
-                  : isOnAir
-                    ? 'bg-red-600 hover:bg-red-500 text-white border-red-500/60 shadow-[0_0_30px_rgba(239,68,68,0.5)]'
-                    : 'bg-slate-800/60 border-white/5 text-slate-400 hover:border-red-500/40 hover:text-red-400'
-              }`}
-            >
-              <span>{t('control.onair')}</span>
-              {!timerState.usbRelayStatus && (
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 normal-case">
-                  {t('control.onair.relay_disconnected')}
-                </span>
-              )}
-            </button>
-          </div>
+          {/* ON AIR mega button.
+              États :
+                • Pas de relais USB → bouton désactivé, gris.
+                • Chrono actif (running OU paused) → bouton FORCÉ rouge ON,
+                  désactivé (le chrono prend la priorité, on ne peut pas couper).
+                • Chrono arrêté → bouton libre, toggle manualOnAir côté serveur. */}
+          {(() => {
+            const relayOk = !!timerState.usbRelayStatus;
+            const chronoActive = !!timerState.isRunning;
+            const isLocked = chronoActive;
+            const isDisabled = !relayOk || isLocked;
+            const tooltip = !relayOk
+              ? t('control.onair.tooltip_disabled')
+              : isLocked
+                ? tr({
+                    fr: 'Verrouillé : le chrono force ON AIR. Arrête le chrono pour reprendre la main.',
+                    en: 'Locked: the timer forces ON AIR. Stop the timer to regain control.'
+                  })
+                : undefined;
+            return (
+              <div className="p-4 border-b border-white/5">
+                <button
+                  onClick={() => { if (!isDisabled) socket.emit('setOnAir', !isOnAir); }}
+                  disabled={isDisabled}
+                  title={tooltip}
+                  className={`relative w-full py-4 rounded-md border font-black text-xl uppercase tracking-widest transition-all duration-300 flex flex-col items-center justify-center gap-0.5 ${
+                    !relayOk
+                      ? 'bg-slate-900/60 border-white/5 text-slate-600 cursor-not-allowed'
+                      : isOnAir
+                        ? `bg-red-600 text-white border-red-500/60 shadow-[0_0_30px_rgba(239,68,68,0.5)] ${isLocked ? 'cursor-not-allowed' : 'hover:bg-red-500'}`
+                        : 'bg-slate-800/60 border-white/5 text-slate-400 hover:border-red-500/40 hover:text-red-400'
+                  }`}
+                >
+                  <span>{t('control.onair')}</span>
+                  {!relayOk && (
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 normal-case">
+                      {t('control.onair.relay_disconnected')}
+                    </span>
+                  )}
+                  {isLocked && relayOk && (
+                    <span className="absolute top-1.5 right-2 flex items-center gap-1 text-[9px] font-semibold uppercase tracking-widest text-white/70">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      <span>{tr({ fr: 'chrono', en: 'timer' })}</span>
+                    </span>
+                  )}
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Preset times */}
           {presetTimes.length > 0 && (

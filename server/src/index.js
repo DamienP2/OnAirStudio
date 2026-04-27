@@ -53,19 +53,30 @@ try {
   console.error('Erreur lors de la connexion au relais USB:', err);
 }
 
-// Fonction pour contrôler le relais ON AIR
-// 1. Met à jour l'état DÉSIRÉ (LEDOnAir) — toujours, même si le relais est absent.
-//    Comme ça le probe périodique peut restaurer l'état à la reconnexion.
-// 2. Émet l'état désiré aux clients (badge ON AIR dans l'UI).
-// 3. Applique physiquement sur le relais si présent et répond.
-function updateOnAirLight(status) {
-  if (status === 'on')       LEDOnAir = true;
-  else if (status === 'off') LEDOnAir = false;
+// État ON AIR — 2 sources distinctes :
+//  • manualOnAir : action explicite de l'opérateur (bouton ON AIR dans Contrôle
+//    ou endpoint REST /api/onair/on|off). Persiste tant qu'on ne le rebascule pas.
+//  • chronoActiveOnAir : dérivé du timerState (true si chrono running OU paused).
+//    Suit automatiquement les transitions start/stop/reset.
+//
+// État effectif (LEDOnAir) = manualOnAir OR chronoActiveOnAir.
+// → Quand le chrono tourne, l'antenne est FORCÉE ON (override le manuel).
+// → Quand le chrono est arrêté, le bouton manuel pilote l'antenne.
+let manualOnAir = false;
+let chronoActiveOnAir = false;
 
+// Recalcule LEDOnAir à partir des 2 sources, broadcast et applique au relais
+// si l'état effectif a changé. Idempotent : appelable à chaque transition.
+function recomputeOnAir() {
+  const desired = manualOnAir || chronoActiveOnAir;
+  if (desired === LEDOnAir) {
+    // État inchangé : on émet quand même le snapshot (utile pour les nouveaux
+    // clients qui se connectent et n'ont pas encore reçu l'état initial).
+    return;
+  }
+  LEDOnAir = desired;
   io.emit('onAirStateUpdate', { isOnAir: LEDOnAir });
-
-  if (!relay) return; // physiquement pas applicable maintenant, le probe s'en chargera
-
+  if (!relay) return;
   try {
     relay.setState(1, LEDOnAir);
     if (typeof timerState !== 'undefined') timerState.usbRelayStatus = true;
@@ -73,6 +84,14 @@ function updateOnAirLight(status) {
     console.error('Erreur lors du contrôle du relais:', err);
     if (typeof timerState !== 'undefined') timerState.usbRelayStatus = false;
   }
+}
+
+// Appelé par les transitions du chrono (startTimer / stopTimer / resetTimer).
+// Indépendant de manualOnAir : l'opérateur peut avoir ON AIR manuel ou pas,
+// le chrono ajoute juste son override sans écraser l'état manuel.
+function setChronoActive(active) {
+  chronoActiveOnAir = !!active;
+  recomputeOnAir();
 }
 
 const app = express();
@@ -288,7 +307,7 @@ function startTimer(duration) {
     timerState.remainingTime = timerState.targetTime;
     timerState.elapsedTime = 0;
   }
-  updateOnAirLight('on'); // Allumer le relais au démarrage
+  setChronoActive(true); // Le chrono force ON AIR pendant qu'il tourne
   io.emit('startTimer', timerState.selectedDuration);
   emitTimerState();
 }
@@ -301,7 +320,9 @@ function stopTimer() {
   timerState.remainingTime = 0;
   timerState.targetTime = 0;
   timerState.selectedDuration = '00:00:00';
-  updateOnAirLight('off');
+  // Chrono off → on retire l'override chrono. Si l'opérateur avait ON AIR
+  // manuel allumé avant, l'antenne reste allumée. Sinon elle s'éteint.
+  setChronoActive(false);
   
   // Nettoyer le timeout si présent
   if (autoStopTimeout) {
@@ -322,8 +343,8 @@ function resetTimer() {
   timerState.remainingTime = 0;
   timerState.targetTime = 0;
   timerState.selectedDuration = '00:00:00';
-  updateOnAirLight('off'); // Éteindre le relais
-  
+  setChronoActive(false); // Chrono reset → retire l'override chrono
+
   // Nettoyer le timeout si présent
   if (autoStopTimeout) {
     clearTimeout(autoStopTimeout);
@@ -380,11 +401,12 @@ function pauseTimer() {
 }
 
 // Fonction pour reprendre le timer
-// Le relais est déjà allumé (on ne l'a pas éteint en pause), mais on force l'état
-// au cas où un probe ait échoué entre temps (défense en profondeur).
+// Le chrono était déjà actif (pause = isRunning + isPaused), donc l'override
+// chrono était déjà appliqué. On le force quand même par sécurité au cas où
+// un probe aurait échoué entre temps.
 function resumeTimer() {
   timerState.isPaused = false;
-  updateOnAirLight('on');
+  setChronoActive(true);
   io.emit('resumeTimer');
   emitTimerState();
 }
@@ -464,18 +486,27 @@ app.post('/api/timer/digit/decrement', (req, res) => {
   }
 });
 
+// Toggle manuel ON AIR (Companion / Stream Deck / API). Suit la même règle
+// que le bouton ON AIR : ignoré quand le chrono est actif (le chrono force ON).
+// La réponse renvoie l'état effectif actuel (qui peut différer du désiré).
 app.post('/api/onair/on', (req, res) => {
   logAction('API', 'OnAir Light On');
-  updateOnAirLight('on');
+  if (!chronoActiveOnAir) {
+    manualOnAir = true;
+    recomputeOnAir();
+  }
   res.setHeader('Content-Type', 'application/json');
-  res.json({ status: 'success', onair: true });
+  res.json({ status: 'success', onair: LEDOnAir, locked: chronoActiveOnAir });
 });
 
 app.post('/api/onair/off', (req, res) => {
   logAction('API', 'OnAir Light Off');
-  updateOnAirLight('off');
+  if (!chronoActiveOnAir) {
+    manualOnAir = false;
+    recomputeOnAir();
+  }
   res.setHeader('Content-Type', 'application/json');
-  res.json({ status: 'success', onair: false });
+  res.json({ status: 'success', onair: LEDOnAir, locked: chronoActiveOnAir });
 });
 
 // Fonction utilitaire pour formater le temps en chiffres individuels
@@ -739,7 +770,7 @@ io.on('connection', (socket) => {
     timerState.targetTime = duration;
     timerState.elapsedTime = 0;
     timerState.remainingTime = duration;
-    updateOnAirLight('on'); // Allumer le relais
+    setChronoActive(true);
     emitTimerState();
   });
 
@@ -750,7 +781,7 @@ io.on('connection', (socket) => {
     timerState.remainingTime = 0;
     timerState.targetTime = 0;
     timerState.selectedDuration = '00:00:00';
-    updateOnAirLight('off');
+    setChronoActive(false);
     // Annule le filet de sécurité d'auto-stop 1h s'il était armé,
     // sinon il déclencherait un stopTimer() superflu plus tard.
     if (autoStopTimeout) { clearTimeout(autoStopTimeout); autoStopTimeout = null; }
@@ -760,13 +791,13 @@ io.on('connection', (socket) => {
 
   socket.on('pauseTimer', () => {
     timerState.isPaused = true;
-    // Le relais reste actif en pause — même comportement qu'en marche
+    // L'override chrono reste actif en pause — l'antenne ne s'éteint pas.
     emitTimerState();
   });
 
   socket.on('resumeTimer', () => {
     timerState.isPaused = false;
-    updateOnAirLight('on'); // Force l'état (défense en profondeur)
+    setChronoActive(true); // défense en profondeur
     emitTimerState();
   });
 
@@ -784,15 +815,24 @@ io.on('connection', (socket) => {
     timerState.isPaused = false;
     timerState.elapsedTime = 0;
     timerState.remainingTime = 0;
-    updateOnAirLight('off'); // Éteindre le relais
+    setChronoActive(false);
     if (autoStopTimeout) { clearTimeout(autoStopTimeout); autoStopTimeout = null; }
     emitTimerState();
   });
 
-  // Toggle manuel du relais ON AIR depuis l'UI (bouton rouge dans Control)
+  // Toggle manuel du relais ON AIR depuis l'UI (bouton rouge dans Control).
+  // Ignoré quand le chrono est actif : le chrono prend la priorité, le bouton
+  // ne peut pas couper l'antenne. Le client doit aussi désactiver visuellement
+  // le bouton pour signaler le verrouillage.
   socket.on('setOnAir', (desiredState) => {
-    const on = !!desiredState;
-    updateOnAirLight(on ? 'on' : 'off');
+    if (chronoActiveOnAir) {
+      // Émet l'état courant pour que le client se resync et ne reste pas
+      // sur une attente fantôme.
+      io.emit('onAirStateUpdate', { isOnAir: LEDOnAir });
+      return;
+    }
+    manualOnAir = !!desiredState;
+    recomputeOnAir();
   });
 
   // Gérer les changements de couleur
