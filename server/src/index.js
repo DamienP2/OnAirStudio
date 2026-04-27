@@ -690,6 +690,11 @@ setInterval(async () => {
 setInterval(async () => {
   // Utiliser l'heure NTP corrigée pour l'affichage en temps réel
   const correctedTime = new Date(Date.now() + ntpOffset);
+  // Epoch ms de l'heure NTP serveur — broadcasté aux clients pour qu'ils
+  // puissent reformater dans une timezone custom sans dépendre de leur
+  // propre Date.now() (utile sur le PC kiosk dont l'horloge système peut
+  // être désynchro).
+  timerState.serverTimeMs = correctedTime.getTime();
   // Formate dans le fuseau horaire et la langue configurés (Settings).
   // Au moindre changement (updateSettings), le tick suivant utilise les nouvelles valeurs.
   const localeTag = (config.language === 'en') ? 'en-GB' : 'fr-FR';

@@ -41,6 +41,12 @@ function adaptTimerState(raw = {}) {
   if ('currentTime' in raw && typeof raw.currentTime === 'string' && raw.currentTime) {
     out.currentTime = raw.currentTime;
   }
+  // serverTimeMs : epoch NTP du serveur — utilisé par les clocks avec une
+  // timezone custom pour reformater l'heure dans n'importe quel fuseau sans
+  // dépendre de Date.now() du browser (qui peut être faux sur un kiosk PC).
+  if ('serverTimeMs' in raw && typeof raw.serverTimeMs === 'number' && raw.serverTimeMs > 0) {
+    out.serverTimeMs = raw.serverTimeMs;
+  }
   if ('remainingTime' in raw) {
     out.remainingTime = raw.remainingTime;
     out.remaining = formatSeconds(raw.remainingTime);
@@ -60,6 +66,9 @@ export function TimerProvider({ children }) {
     elapsed: '00:00:00', remaining: '00:00:00',
     elapsedTime: 0, remainingTime: 0,
     currentTime: formatCurrentTime(new Date(), 'Europe/Paris', 'fr'),
+    // 0 = pas encore reçu du serveur ; les clocks tomberont sur Date.now()
+    // jusqu'au 1er timeUpdate (max 1s d'attente).
+    serverTimeMs: 0,
     isNTPActive: true,
     currentNtpServer: null,
     usbRelayStatus: false,
