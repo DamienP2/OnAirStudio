@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { socket } from '../socket';
 
 const TimerContext = createContext(null);
@@ -34,6 +34,13 @@ function adaptTimerState(raw = {}) {
   if ('isNTPActive' in raw) out.isNTPActive = !!raw.isNTPActive;
   if ('currentNtpServer' in raw) out.currentNtpServer = raw.currentNtpServer || null;
   if ('usbRelayStatus' in raw) out.usbRelayStatus = !!raw.usbRelayStatus;
+  // currentTime : on PRÉFÈRE celui du serveur (heure NTP-corrigée formatée
+  // dans le fuseau studio). Indispensable pour /display sur le PC kiosk
+  // dont l'horloge système peut être désynchro — le client ne doit plus
+  // jamais recalculer l'heure depuis son propre new Date().
+  if ('currentTime' in raw && typeof raw.currentTime === 'string' && raw.currentTime) {
+    out.currentTime = raw.currentTime;
+  }
   if ('remainingTime' in raw) {
     out.remainingTime = raw.remainingTime;
     out.remaining = formatSeconds(raw.remainingTime);
@@ -61,15 +68,11 @@ export function TimerProvider({ children }) {
     timezone: 'Europe/Paris',
     language: 'fr'
   });
-  // Refs pour que le tick lise toujours les valeurs courantes sans recréer l'interval
-  const tzRef = useRef('Europe/Paris');
-  const langRef = useRef('fr');
-
   useEffect(() => {
-    // Tick local 1Hz — formate l'heure dans le fuseau + langue choisis.
-    const tick = setInterval(() => {
-      setState(s => ({ ...s, currentTime: formatCurrentTime(new Date(), tzRef.current, langRef.current) }));
-    }, 1000);
+    // L'heure courante est désormais fournie par le serveur (timeUpdate 1Hz)
+    // qui utilise son offset NTP. Plus de tick local — sinon le PC kiosk
+    // afficherait son heure système locale (potentiellement désynchro)
+    // au lieu de l'heure NTP de l'app.
 
     const onTimer = (raw) => setState(s => ({ ...s, ...adaptTimerState(raw) }));
     const onInitialState = (raw) => setState(s => ({ ...s, ...adaptTimerState(raw) }));
@@ -79,8 +82,6 @@ export function TimerProvider({ children }) {
       if (!settings) return;
       const tz = settings.timezone || 'Europe/Paris';
       const lang = settings.language || 'fr';
-      tzRef.current = tz;
-      langRef.current = lang;
       setState(s => ({
         ...s,
         timezone: tz,
@@ -88,9 +89,9 @@ export function TimerProvider({ children }) {
         // settingsUpdate transporte aussi studioName — on l'utilise comme
         // source de vérité (sinon on dépend uniquement de studioNameUpdate
         // qui peut être raté à la connexion initiale).
-        studioName: settings.studioName || s.studioName,
-        // Met à jour l'heure tout de suite sans attendre le tick
-        currentTime: formatCurrentTime(new Date(), tz, lang)
+        studioName: settings.studioName || s.studioName
+        // Pas de currentTime ici : on attend le prochain timeUpdate (1Hz)
+        // qui apporte l'heure NTP fraîchement formatée dans le nouveau tz.
       }));
     };
 
@@ -105,7 +106,6 @@ export function TimerProvider({ children }) {
     socket.emit('requestSettings');
 
     return () => {
-      clearInterval(tick);
       socket.off('timerUpdate', onTimer);
       socket.off('timeUpdate', onTimer);
       socket.off('initialState', onInitialState);
