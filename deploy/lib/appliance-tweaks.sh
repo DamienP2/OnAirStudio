@@ -100,6 +100,48 @@ configure_dconf_defaults_for_user() {
     fi
 }
 
+configure_grub_silent_boot() {
+    # Boot direct sans menu — un poste studio doit redémarrer en 100%
+    # autonome. Sans ces réglages, Ubuntu affiche le menu GRUB et BLOQUE
+    # tant qu'on n'appuie pas Entrée si le boot précédent a été interrompu
+    # (flag `recordfail`). Inacceptable pour un kiosk en production.
+    log_info "Configuration de GRUB pour un boot silencieux (kiosk)"
+
+    local grub_default="/etc/default/grub"
+    if [[ ! -f "$grub_default" ]]; then
+        log_warn "${grub_default} introuvable — skip GRUB"
+        return 0
+    fi
+
+    # Helper : set ou ajoute "KEY=VALUE" dans /etc/default/grub.
+    set_grub_var() {
+        local key="$1" value="$2"
+        if grep -qE "^${key}=" "$grub_default"; then
+            sed -i "s|^${key}=.*|${key}=${value}|" "$grub_default"
+        else
+            printf '\n%s=%s\n' "$key" "$value" >> "$grub_default"
+        fi
+    }
+
+    set_grub_var GRUB_TIMEOUT 0
+    set_grub_var GRUB_TIMEOUT_STYLE hidden
+    set_grub_var GRUB_RECORDFAIL_TIMEOUT 0
+
+    # Reset le flag recordfail s'il était positionné par un boot précédent.
+    if [[ -f /boot/grub/grubenv ]]; then
+        grub-editenv /boot/grub/grubenv unset recordfail 2>/dev/null || true
+    fi
+
+    # Régénère la config grub effective.
+    if command_exists update-grub; then
+        update-grub >/dev/null 2>&1 || log_warn "update-grub a échoué — relance manuellement plus tard"
+    elif command_exists grub-mkconfig; then
+        grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1 || log_warn "grub-mkconfig a échoué"
+    fi
+
+    log_ok "GRUB silencieux : boot direct, plus de menu, recordfail=0"
+}
+
 wipe_gnome_keyring() {
     # En auto-login GDM, le user ne saisit aucun mot de passe, donc pam_gnome_keyring
     # ne peut pas déchiffrer le trousseau existant → popup "le trousseau n'a pas été
@@ -119,11 +161,12 @@ wipe_gnome_keyring() {
 }
 
 apply_appliance_tweaks() {
-    log_step "Durcissements appliance (timezone, veille, updates, snap, GNOME, keyring)"
+    log_step "Durcissements appliance (timezone, veille, updates, snap, GNOME, GRUB, keyring)"
     set_timezone
     disable_sleep_and_suspend
     disable_auto_updates
     disable_snap_refresh
     configure_dconf_defaults_for_user
+    configure_grub_silent_boot
     wipe_gnome_keyring
 }
