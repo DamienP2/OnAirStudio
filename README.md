@@ -7,7 +7,7 @@ Apple iCloud), flux vidéo NDI, contrôle distant via Stream Deck.
 
 > Application web full-stack (Node.js + React) prévue pour tourner sur une
 > machine dédiée du studio (mini-PC, Raspberry Pi 4/5, Intel NUC…) sous
-> **Ubuntu Desktop 22.04 ou 24.04 LTS**.
+> **Ubuntu Desktop 22.04, 24.04 ou 26.04 LTS**.
 
 ---
 
@@ -93,7 +93,7 @@ Apple iCloud), flux vidéo NDI, contrôle distant via Stream Deck.
 
 | Composant | Minimum | Recommandé |
 |---|---|---|
-| OS | Ubuntu Desktop 22.04 LTS | Ubuntu Desktop 24.04 ou 26.04 LTS |
+| OS | Ubuntu Desktop 22.04 LTS | Ubuntu Desktop 24.04 ou 26.04 LTS (validé) |
 | CPU | x86_64 ou ARM64 (RPi 4) | RPi 5 / Intel NUC i3+ |
 | RAM | 2 Go | 4 Go+ |
 | Disque | 8 Go libres | 16 Go SSD |
@@ -114,7 +114,7 @@ sudo apt update && sudo apt upgrade -y
 # 2. Installer les outils de base nécessaires au script d'install
 sudo apt install -y curl git ca-certificates openssh-server
 
-# 3. (Optionnel mais recommandé) Activer SSH si tu veux administrer à distance
+# 3. (Optionnel mais recommandé) Activer SSH pour l'administration à distance
 sudo systemctl enable --now ssh
 sudo ufw allow ssh   # si ufw est actif
 
@@ -126,7 +126,7 @@ date
 sudo timedatectl set-ntp true   # active la sync NTP système si besoin
 ```
 
-> ℹ Si tu n'as pas encore SSH activé, fais l'install directement sur la machine. Une fois OnAir Studio installé, tu peux administrer via l'UI web sans avoir besoin de SSH au quotidien.
+> ℹ Si vous n'avez pas encore SSH activé, effectuez l'installation directement sur la machine. Une fois OnAir Studio installé, vous pouvez administrer via l'UI web sans avoir besoin de SSH au quotidien.
 
 ### Logiciels installés automatiquement par le script
 
@@ -349,7 +349,7 @@ officiel NewTek puis relancer `npm ci`.
 ### Mot de passe admin
 
 Le premier mot de passe est configuré par le script. Pour le changer :
-**Réglages → Sécurité** → saisir le nouveau, confirmer. Tu seras déconnecté.
+**Réglages → Sécurité** → saisir le nouveau, confirmer. Vous serez déconnecté(e) automatiquement.
 
 ### Heure & NTP
 

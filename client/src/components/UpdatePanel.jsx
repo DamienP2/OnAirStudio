@@ -86,8 +86,16 @@ export default function UpdatePanel({ adminPassword, timerIsRunning, onShowToast
             clearInterval(pollTimer.current);
             pollTimer.current = null;
             // Petit délai pour laisser le serveur finir de servir le bundle
-            // précédent puis on force le reload (cache index.html no-cache).
-            setTimeout(() => window.location.reload(), 1500);
+            // précédent puis on force un reload AVEC cache-bust dans l'URL.
+            // window.location.reload() peut servir des assets cachés malgré
+            // les headers Cache-Control: no-cache. Une nouvelle URL force le
+            // browser à fetcher une nouvelle index.html → nouveaux bundles
+            // hashés → __APP_VERSION__ rafraîchi.
+            setTimeout(() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('_cb', Date.now().toString());
+              window.location.href = url.toString();
+            }, 1500);
           }
         } catch (err) {
           // Le serveur est momentanément down (restart en cours) — on tolère.

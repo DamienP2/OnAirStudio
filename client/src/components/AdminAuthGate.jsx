@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useT } from '../hooks/useT';
 
 const STORAGE_KEY = 'onair.adminPassword';
+// Event custom (même onglet) : `storage` du navigateur ne se déclenche que pour
+// les autres onglets. Sans cet event, le Header ne sait pas que l'auth vient
+// de changer dans l'onglet courant et le bouton déconnexion ne s'affiche pas
+// jusqu'au prochain refresh.
+export const AUTH_CHANGED_EVENT = 'onair.adminAuthChanged';
 
 async function verify(pw) {
   const res = await fetch('/api/admin/verify', {
@@ -18,8 +23,14 @@ export function getStoredAdminPassword() {
   return sessionStorage.getItem(STORAGE_KEY) || '';
 }
 
+function setStoredAdminPassword(pw) {
+  sessionStorage.setItem(STORAGE_KEY, pw);
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+}
+
 export function clearStoredAdminPassword() {
   sessionStorage.removeItem(STORAGE_KEY);
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
 }
 
 export default function AdminAuthGate({ children }) {
@@ -50,7 +61,7 @@ export default function AdminAuthGate({ children }) {
           setErr('');
           const ok = await verify(pw);
           if (!ok) { setErr(t('auth.wrong')); return; }
-          sessionStorage.setItem(STORAGE_KEY, pw);
+          setStoredAdminPassword(pw);
           setAuthorized(true);
         }}
         className="bg-slate-900/70 border border-white/5 rounded-xl p-8 backdrop-blur-md shadow-2xl shadow-black/50 max-w-md w-full space-y-5"
