@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useTimerState } from '../store/TimerContext';
 
 const DEFAULT_LABELS = {
@@ -42,17 +42,18 @@ function formatTzTime(date, tz) {
 
 export default function DigitalClockObject({ variant: variantProp, props }) {
   const variant = props.variant || variantProp || 'current';
-  const { currentTime, remaining, elapsed, isRunning, isNTPActive, timezone: appTz } = useTimerState();
+  const { currentTime, remaining, elapsed, isRunning, isNTPActive, timezone: appTz, serverTimeMs } = useTimerState();
 
-  // Timezone custom — uniquement pour variant='current'
-  const customTz = variant === 'current' && props.timezone ? props.timezone : null;
-  const [tzNow, setTzNow] = useState(() => formatTzTime(new Date(), customTz));
-  useEffect(() => {
-    if (!customTz) { setTzNow(null); return; }
-    setTzNow(formatTzTime(new Date(), customTz));
-    const id = setInterval(() => setTzNow(formatTzTime(new Date(), customTz)), 1000);
-    return () => clearInterval(id);
-  }, [customTz]);
+  // Timezone custom — uniquement pour variant='current' ET différente du
+  // fuseau studio. On reformate l'heure NTP serveur (serverTimeMs) plutôt
+  // que new Date() pour rester correct sur un kiosk avec horloge système
+  // désynchro.
+  const customTz = variant === 'current' && props.timezone && props.timezone !== appTz
+    ? props.timezone
+    : null;
+  const tzNow = customTz
+    ? formatTzTime(new Date(serverTimeMs || Date.now()), customTz)
+    : null;
 
   const raw = variant === 'current'
     ? (tzNow || currentTime)
