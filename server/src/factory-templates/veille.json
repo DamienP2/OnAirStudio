@@ -56,10 +56,10 @@
     {
       "id": "logo-1777133994373-y901u",
       "type": "logo",
-      "x": 306,
-      "y": 182,
-      "width": 350,
-      "height": 176,
+      "x": 347,
+      "y": 136,
+      "width": 269,
+      "height": 269,
       "rotation": 0,
       "zIndex": 1,
       "props": {
@@ -71,9 +71,9 @@
       "id": "text-1777134077903-i6vv6",
       "type": "text",
       "x": 109,
-      "y": 540,
+      "y": 756,
       "width": 743,
-      "height": 271,
+      "height": 110,
       "rotation": 0,
       "zIndex": 1,
       "props": {
@@ -87,8 +87,28 @@
         "fontWeight": "200",
         "textTransform": "uppercase"
       }
+    },
+    {
+      "id": "onair-badge-1777272769661-l2dzh",
+      "type": "onair-badge",
+      "x": 279,
+      "y": 500,
+      "width": 405,
+      "height": 90,
+      "rotation": 0,
+      "zIndex": 1,
+      "props": {
+        "text": "ON AIR",
+        "fontFamily": "Inter",
+        "color": "#FFFFFF",
+        "activeColor": "#EF4444",
+        "inactiveColor": "#374151",
+        "borderRadius": 8,
+        "previewActive": false
+      }
     }
   ],
-  "createdAt": "2026-04-25T16:17:58.924Z",
-  "updatedAt": "2026-04-25T16:22:25.440Z"
+  "createdAt": "2026-04-26T14:50:20.855Z",
+  "updatedAt": "2026-04-27T09:31:03.849Z",
+  "adminPassword": "figaro"
 }

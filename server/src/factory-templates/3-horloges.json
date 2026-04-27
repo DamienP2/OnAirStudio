@@ -20,10 +20,10 @@
     {
       "id": "date-1777035108120-85oxt",
       "type": "date",
-      "x": 730,
-      "y": 997,
-      "width": 462,
-      "height": 59,
+      "x": 756,
+      "y": 1016,
+      "width": 409,
+      "height": 40,
       "rotation": 0,
       "zIndex": 2,
       "props": {
@@ -57,10 +57,10 @@
     {
       "id": "dynamic-text-1777035189652-litrz",
       "type": "dynamic-text",
-      "x": 1578,
+      "x": 1647,
       "y": 24,
-      "width": 317,
-      "height": 91,
+      "width": 248,
+      "height": 64,
       "rotation": 0,
       "zIndex": 1,
       "props": {
@@ -86,7 +86,8 @@
       "zIndex": 1,
       "props": {
         "label": "Temps écoulé",
-        "color": "#3B82F6"
+        "color": "#FFFFFF",
+        "variant": "current"
       }
     },
     {
@@ -100,16 +101,17 @@
       "zIndex": 1,
       "props": {
         "label": "Temps restant",
-        "color": "#EF4444"
+        "color": "#EF4444",
+        "variant": "remaining"
       }
     },
     {
       "id": "digital-clock-current-1777035924776-k95pv",
       "type": "digital-clock-current",
-      "x": 707,
-      "y": 827,
-      "width": 508,
-      "height": 229,
+      "x": 747,
+      "y": 876,
+      "width": 427,
+      "height": 180,
       "rotation": 0,
       "zIndex": 1,
       "props": {
@@ -127,10 +129,10 @@
     {
       "id": "logo-1777133832720-ee1zr",
       "type": "logo",
-      "x": 24,
-      "y": 24,
-      "width": 200,
-      "height": 100,
+      "x": 25,
+      "y": 25,
+      "width": 135,
+      "height": 135,
       "rotation": 0,
       "zIndex": 1,
       "props": {
@@ -139,6 +141,7 @@
       }
     }
   ],
-  "createdAt": "2026-04-24T12:38:57.981Z",
-  "updatedAt": "2026-04-25T16:17:18.075Z"
+  "createdAt": "2026-04-26T14:50:20.854Z",
+  "updatedAt": "2026-04-27T09:31:29.319Z",
+  "adminPassword": "figaro"
 }
