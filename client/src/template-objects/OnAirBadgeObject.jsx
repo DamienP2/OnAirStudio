@@ -2,16 +2,17 @@ import React from 'react';
 import { useTimerState } from '../store/TimerContext';
 
 export default function OnAirBadgeObject({ props }) {
-  const { isRunning, isPaused } = useTimerState();
+  const { onair, isRunning, isPaused } = useTimerState();
 
-  // État dérivé du chrono :
-  //   - chrono en route (isRunning && !isPaused) → badge actif (rouge)
-  //   - chrono en pause (isPaused)               → badge clignote (rouge ⇄ gris)
-  //   - sinon                                    → badge inactif (gris)
+  // Le badge reflète l'état effectif `onair` du serveur (manuel || chrono actif) :
+  //   - onair=true                                 → badge actif (rouge plein)
+  //   - chrono en pause (isRunning && isPaused)    → badge clignote (rouge ⇄ gris)
+  //                                                  pour signaler la pause
+  //   - onair=false                                → badge inactif (gris)
   // previewActive (designer) force le rendu actif pour la prévisualisation.
   const forcedActive = props.previewActive === true;
-  const isActive = forcedActive || (isRunning && !isPaused);
-  const isBlinking = !forcedActive && isPaused;
+  const isActive = forcedActive || onair;
+  const isBlinking = !forcedActive && isRunning && isPaused;
 
   const activeColor = props.activeColor || '#EF4444';
   const inactiveColor = props.inactiveColor || '#374151';
