@@ -93,7 +93,7 @@ Apple iCloud), flux vidéo NDI, contrôle distant via Stream Deck.
 
 | Composant | Minimum | Recommandé |
 |---|---|---|
-| OS | Ubuntu Desktop 22.04 LTS | Ubuntu Desktop 24.04 LTS |
+| OS | Ubuntu Desktop 22.04 LTS | Ubuntu Desktop 24.04 ou 26.04 LTS |
 | CPU | x86_64 ou ARM64 (RPi 4) | RPi 5 / Intel NUC i3+ |
 | RAM | 2 Go | 4 Go+ |
 | Disque | 8 Go libres | 16 Go SSD |
@@ -103,12 +103,39 @@ Apple iCloud), flux vidéo NDI, contrôle distant via Stream Deck.
 
 > ⚠ **Ubuntu Server n'est pas supporté** — le système nécessite un environnement graphique pour le mode kiosk Chrome qui projette le display.
 
-### Logiciels installés par le script
+### À faire AVANT de lancer le script
+
+Sur un Ubuntu fraîchement installé (surtout **26.04** qui ne préinstalle plus `curl`), exécute ces étapes une fois :
+
+```bash
+# 1. Mettre à jour les paquets système
+sudo apt update && sudo apt upgrade -y
+
+# 2. Installer les outils de base nécessaires au script d'install
+sudo apt install -y curl git ca-certificates openssh-server
+
+# 3. (Optionnel mais recommandé) Activer SSH si tu veux administrer à distance
+sudo systemctl enable --now ssh
+sudo ufw allow ssh   # si ufw est actif
+
+# 4. Vérifier la connectivité (DNS + HTTPS)
+curl -fsSI https://github.com >/dev/null && echo "Internet OK"
+
+# 5. Vérifier l'heure système (sinon les certificats HTTPS échoueront)
+date
+sudo timedatectl set-ntp true   # active la sync NTP système si besoin
+```
+
+> ℹ Si tu n'as pas encore SSH activé, fais l'install directement sur la machine. Une fois OnAir Studio installé, tu peux administrer via l'UI web sans avoir besoin de SSH au quotidien.
+
+### Logiciels installés automatiquement par le script
 
 - **Node.js 22 LTS** (via NodeSource)
 - **Google Chrome** (repo officiel Google)
 - **NetworkManager** (pour la config IP statique)
-- Build tools (`build-essential`, `python3` — nécessaires pour les modules natifs comme `@balena/usbrelay` et `grandiose`)
+- **ffmpeg** — capture x11grab pour la sortie vidéo
+- Build tools (`build-essential`, `python3` — nécessaires pour les modules natifs comme `@balena/usbrelay`)
+- `jq` (parsing JSON dans les scripts d'install/update)
 - `chrony` (NTP) — déjà présent sur Ubuntu Desktop par défaut
 
 ---

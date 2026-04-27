@@ -52,30 +52,47 @@ run_preflight() {
     fi
     log_ok "Environnement graphique détecté"
 
-    # Connectivité Internet — on teste plusieurs cibles en parallèle ; il
-    # suffit qu'une réponde pour valider que l'install peut continuer. Évite
-    # le faux-positif quand un domaine spécifique est temporairement indispo.
+    # Connectivité Internet — test pur bash via /dev/tcp (pas de dépendance
+    # à curl/wget qui peuvent ne pas être installés sur un Ubuntu fresh).
+    # On teste plusieurs cibles TCP/443, il suffit qu'une réponde.
     local probes=(
-        "https://github.com"
-        "https://deb.nodesource.com"
-        "https://dl.google.com"
-        "https://1.1.1.1"
+        "github.com:443"
+        "deb.nodesource.com:443"
+        "dl.google.com:443"
+        "1.1.1.1:443"
     )
     local connected=0
     local probe_ok=""
-    for url in "${probes[@]}"; do
-        if curl -fsSI --max-time 4 "$url" >/dev/null 2>&1; then
+    for probe in "${probes[@]}"; do
+        local host="${probe%:*}"
+        local port="${probe#*:}"
+        # timeout 4s, redirige stderr pour silencer "Connection timed out"
+        if timeout 4 bash -c "exec 3<>/dev/tcp/${host}/${port}" 2>/dev/null; then
             connected=1
-            probe_ok="$url"
+            probe_ok="$probe"
             break
         fi
     done
     if [[ "$connected" -eq 0 ]]; then
-        die "Pas de connexion Internet — aucune des cibles de test n'a répondu (${probes[*]}).
+        die "Pas de connexion Internet — aucune des cibles TCP/443 ne répond (${probes[*]}).
    Vérifie : interface réseau active, DNS, pare-feu, proxy.
-   Pour diagnostiquer : curl -v https://github.com"
+   Diagnostic : nslookup github.com puis bash -c 'echo > /dev/tcp/github.com/443'"
     fi
     log_ok "Connexion Internet OK (via ${probe_ok})"
+
+    # Installe curl + ca-certificates si absents — nécessaires aux étapes
+    # suivantes (téléchargement keyrings NodeSource, Chrome, etc.).
+    # Ubuntu Desktop 26.04 n'inclut plus curl par défaut.
+    if ! command_exists curl; then
+        log_info "Installation de curl + ca-certificates (manquants)..."
+        if ! apt-get update -qq >/dev/null 2>&1; then
+            log_warn "apt-get update a échoué — vérifie /etc/apt/sources.list"
+        fi
+        if ! apt-get install -y -qq curl ca-certificates >/dev/null 2>&1; then
+            die "Impossible d'installer curl. Lance manuellement : sudo apt install -y curl ca-certificates"
+        fi
+        log_ok "curl installé"
+    fi
 
     # Espace disque sur /opt
     local free_mb
