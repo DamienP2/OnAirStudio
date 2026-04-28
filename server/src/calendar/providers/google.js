@@ -7,6 +7,7 @@
 // Doc : https://developers.google.com/calendar/api/v3/reference
 
 const storage = require('../storage');
+const { fetchWithTimeout } = require('../fetch-utils');
 
 const GOOGLE_AUTH = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN = 'https://oauth2.googleapis.com/token';
@@ -42,7 +43,7 @@ async function exchangeCode({ code, redirectUri }) {
     redirect_uri: redirectUri,
     grant_type: 'authorization_code'
   });
-  const res = await fetch(GOOGLE_TOKEN, {
+  const res = await fetchWithTimeout(GOOGLE_TOKEN, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body
@@ -53,7 +54,7 @@ async function exchangeCode({ code, redirectUri }) {
   tokens.expires_at = Date.now() + (tokens.expires_in - 60) * 1000;
 
   // Récupérer l'email associé
-  const userinfo = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+  const userinfo = await fetchWithTimeout('https://openidconnect.googleapis.com/v1/userinfo', {
     headers: { Authorization: `Bearer ${tokens.access_token}` }
   }).then(r => r.json()).catch(() => ({}));
 
@@ -70,7 +71,7 @@ async function refreshAccessToken(tokens) {
     client_secret: creds.clientSecret,
     grant_type: 'refresh_token'
   });
-  const res = await fetch(GOOGLE_TOKEN, {
+  const res = await fetchWithTimeout(GOOGLE_TOKEN, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body
@@ -98,7 +99,7 @@ async function getAccessToken(accountId) {
 
 async function listCalendars(accountId) {
   const token = await getAccessToken(accountId);
-  const res = await fetch(`${GOOGLE_API}/users/me/calendarList`, {
+  const res = await fetchWithTimeout(`${GOOGLE_API}/users/me/calendarList`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error(`Google calendarList : ${res.status} ${await res.text()}`);
@@ -128,7 +129,7 @@ async function listEvents(accountId, { calendarIds, timeMin, timeMax }) {
       maxResults: '250'
     });
     const url = `${GOOGLE_API}/calendars/${encodeURIComponent(calId)}/events?${params}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
       // Skip silencieusement les calendriers en erreur (calendrier supprimé etc)
       console.warn(`[google] events ${calId}: ${res.status}`);

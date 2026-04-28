@@ -13,6 +13,7 @@
 const ical = require('node-ical');
 const storage = require('../storage');
 const { encrypt, decrypt } = require('../crypto-utils');
+const { fetchWithTimeout } = require('../fetch-utils');
 
 const ICLOUD_BASE = 'https://caldav.icloud.com';
 
@@ -23,7 +24,7 @@ function authHeader(username, password) {
 }
 
 async function dav(url, { method, headers = {}, body, username, password, depth = '0' }) {
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method,
     headers: {
       Authorization: authHeader(username, password),

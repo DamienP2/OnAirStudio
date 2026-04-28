@@ -7,6 +7,7 @@
 // Doc : https://learn.microsoft.com/en-us/graph/api/resources/calendar
 
 const storage = require('../storage');
+const { fetchWithTimeout } = require('../fetch-utils');
 
 function authBase(tenant) {
   return `https://login.microsoftonline.com/${tenant || 'common'}/oauth2/v2.0`;
@@ -47,7 +48,7 @@ async function exchangeCode({ code, redirectUri }) {
     grant_type: 'authorization_code',
     scope: SCOPES
   });
-  const res = await fetch(`${authBase(creds.tenant)}/token`, {
+  const res = await fetchWithTimeout(`${authBase(creds.tenant)}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body
@@ -56,7 +57,7 @@ async function exchangeCode({ code, redirectUri }) {
   const tokens = await res.json();
   tokens.expires_at = Date.now() + (tokens.expires_in - 60) * 1000;
 
-  const me = await fetch(`${GRAPH}/me`, {
+  const me = await fetchWithTimeout(`${GRAPH}/me`, {
     headers: { Authorization: `Bearer ${tokens.access_token}` }
   }).then(r => r.json()).catch(() => ({}));
 
@@ -77,7 +78,7 @@ async function refreshAccessToken(tokens) {
     grant_type: 'refresh_token',
     scope: SCOPES
   });
-  const res = await fetch(`${authBase(creds.tenant)}/token`, {
+  const res = await fetchWithTimeout(`${authBase(creds.tenant)}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body
@@ -106,7 +107,7 @@ async function getAccessToken(accountId) {
 
 async function listCalendars(accountId) {
   const token = await getAccessToken(accountId);
-  const res = await fetch(`${GRAPH}/me/calendars`, {
+  const res = await fetchWithTimeout(`${GRAPH}/me/calendars`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) throw new Error(`Microsoft calendars : ${res.status} ${await res.text()}`);
@@ -148,7 +149,7 @@ async function listEvents(accountId, { calendarIds, timeMin, timeMax }) {
       $orderby: 'start/dateTime'
     });
     const url = `${GRAPH}/me/calendars/${encodeURIComponent(calId)}/calendarView?${params}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.timezone="UTC"' } });
+    const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.timezone="UTC"' } });
     if (!res.ok) {
       console.warn(`[microsoft] events ${calId}: ${res.status}`);
       continue;
