@@ -676,13 +676,24 @@ let autoStopTimeout = null; // Pour stocker le timeout d'arrêt automatique
 let lastNTPTime = new Date(); // Stocker la dernière heure NTP
 let ntpOffset = 0; // Offset entre l'heure système et l'heure NTP
 
-// Synchronisation NTP toutes les 10 secondes (statut temps réel)
+// Synchronisation NTP toutes les 10 secondes (statut temps réel).
+// Garde anti-chevauchement : offline, getNTPTime() peut prendre jusqu'à 15s
+// (3 serveurs × 5s timeout). Sans cette garde, setInterval lancerait un nouveau
+// tick avant que le précédent ne se termine → empilage qui finit par
+// saturer l'event loop / les sockets DNS.
+let ntpTickInFlight = false;
 setInterval(async () => {
-  const currentDate = await getNTPTime();
-  if (currentDate) {
-    lastNTPTime = currentDate;
-    const systemTime = new Date();
-    ntpOffset = currentDate.getTime() - systemTime.getTime();
+  if (ntpTickInFlight) return;
+  ntpTickInFlight = true;
+  try {
+    const currentDate = await getNTPTime();
+    if (currentDate) {
+      lastNTPTime = currentDate;
+      const systemTime = new Date();
+      ntpOffset = currentDate.getTime() - systemTime.getTime();
+    }
+  } finally {
+    ntpTickInFlight = false;
   }
 }, 10000);
 

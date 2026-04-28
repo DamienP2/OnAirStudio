@@ -112,21 +112,31 @@ async function refreshAccountCalendars(accountId) {
 
 function startPolling(getAppTz) {
   if (pollTimer) return;
+  // Garde anti-chevauchement : offline, chaque fetch peut prendre jusqu'à
+  // son timeout (10s). Avec N comptes × 2 ranges, un tick lent peut empiéter
+  // sur le suivant si le réseau est mort. Skip le tick si le précédent court.
+  let pollInFlight = false;
   const tick = async () => {
-    const accounts = storage.listAccounts();
-    for (const acc of accounts) {
-      try {
-        // On n'a pas la liste des `range` actifs côté client → on rafraîchit
-        // les deux tant qu'il y a au moins une entrée déjà en cache.
-        for (const range of ['today', 'week']) {
-          const key = `${acc.id}:${range}`;
-          if (eventsCache.has(key)) {
-            await refreshAccountEvents(acc.id, range, getAppTz());
+    if (pollInFlight) return;
+    pollInFlight = true;
+    try {
+      const accounts = storage.listAccounts();
+      for (const acc of accounts) {
+        try {
+          // On n'a pas la liste des `range` actifs côté client → on rafraîchit
+          // les deux tant qu'il y a au moins une entrée déjà en cache.
+          for (const range of ['today', 'week']) {
+            const key = `${acc.id}:${range}`;
+            if (eventsCache.has(key)) {
+              await refreshAccountEvents(acc.id, range, getAppTz());
+            }
           }
+        } catch (e) {
+          console.warn(`[calendar] polling ${acc.id}:`, e.message);
         }
-      } catch (e) {
-        console.warn(`[calendar] polling ${acc.id}:`, e.message);
       }
+    } finally {
+      pollInFlight = false;
     }
   };
   pollTimer = setInterval(tick, POLL_INTERVAL_MS);

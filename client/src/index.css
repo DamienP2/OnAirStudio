@@ -1,3 +1,16 @@
+/* Polices bundlées localement (offline-first) — pas de fetch vers
+   fonts.googleapis.com, indispensable pour un studio sans internet.
+   Inter (UI) : 400, 500, 600, 700, 800.
+   JetBrains Mono (chiffres + horloges digitales) : 400, 600, 700. */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/800.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/600.css";
+@import "@fontsource/jetbrains-mono/700.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
