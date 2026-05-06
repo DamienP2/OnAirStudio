@@ -4,6 +4,26 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const config = require('./config');
 const ntpClient = require('ntp-client');
+
+// Garde anti-crash sur erreurs récurrentes non catchables (process-level).
+// Cas connus :
+//   • ERR_SOCKET_DGRAM_NOT_RUNNING : bug de la lib ntp-client (close() sur
+//     une socket UDP déjà fermée) → crashait le serveur en boucle offline.
+//     Constaté en prod : 408+ restarts systemd avant ce fix. À chaque crash,
+//     l'app était indisponible ~10s pendant le restart.
+// On log mais on n'exit pas. Les erreurs vraiment fatales (assertion failure,
+// out-of-memory) crasheront quand même via les autres mécanismes Node.
+process.on('uncaughtException', (err) => {
+  if (err && err.code === 'ERR_SOCKET_DGRAM_NOT_RUNNING') {
+    // Log silencieux : c'est connu et bénin (juste une socket déjà fermée).
+    console.warn('[uncaughtException] ntp-client socket close ignored:', err.message);
+    return;
+  }
+  console.error('[uncaughtException]', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
 const USBRelay = require('@balena/usbrelay');
 const path = require('path');
 const fs = require('fs');
